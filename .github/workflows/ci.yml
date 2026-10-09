@@ -5,6 +5,11 @@ on:
     branches: [main, master]
   pull_request:
 
+# Cancel older runs for the same branch so a new push supersedes them.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     name: Typecheck · Lint · Format · Unit · Build

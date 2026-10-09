@@ -1,0 +1,15 @@
+#!/bin/sh
+# Runs the quality gates before anything is pushed, so `main` can only receive
+# changes that already pass locally. GitHub branch protection does the same on
+# the remote side (require the CI status check before merging).
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+echo "pre-push: running typecheck + lint + format + unit tests..."
+npm run typecheck
+npm run lint
+npm run format:check
+npm run test:run
+echo "pre-push: all quality gates passed."

@@ -1,13 +1,22 @@
 name: Deploy to Cloudflare
 
+# Deploy runs only after CI succeeds on main (workflow_run gate), or manually.
+# It never runs alongside a push, so it cannot race ahead of the quality gates.
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
     branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   pages:
     name: Deploy app to Cloudflare Pages
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +38,7 @@ jobs:
 
   whisper:
     name: Deploy Whisper worker
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
