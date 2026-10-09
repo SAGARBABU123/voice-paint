@@ -29,7 +29,7 @@ Deploy both from the repo root (committed `wrangler.jsonc` covers the app):
 
 ```bash
 VITE_WHISPER_ENDPOINT=https://voice-over-paint-whisper.<sub>.workers.dev \
-VITE_WHISPER_LANGUAGE=te \
+VITE_WHISPER_LANGUAGE=en \
 CLOUDFLARE_API_TOKEN=<token> CLOUDFLARE_ACCOUNT_ID=<id> \
   ./scripts/deploy-cloudflare.sh
 ```

@@ -56,11 +56,12 @@ limitations, passing quality gates.
 - **Phase 11 — Compound voice commands (English) ✅** — clause splitting on
   "and/then/also", new allowlisted `shape.draw` and `canvas.fill` intents, and a
   shared-engine route so "draw a circle and fill it red" works. Deterministic
-  grammar; no LLM. Multilingual (Telugu) and packaging remain later phases.
-- **Phase 12 — Telugu / multilingual grammar ✅** — Telugu script and romanised
-  aliases for tools, colours, sizes, actions, and connectors, with Unicode-safe
-  normalization ("వృత్తం గీయి మరియు ఎరుపు నింపు" and "vrutham geyyi mariyu erupu
-  nimpu" both parse). Same allowlisted commands.
+  grammar; no LLM.
+- **Phase 12 — English grammar (synonyms/slang) ✅** — expanded English aliases
+  ("make a circle", "draw me a rectangle and fill it blue", "bucket it", …)
+  so casual phrasing maps to the same allowlisted commands. Multilingual/Telugu
+  aliases were removed at the user's request — recognition is English by
+  default (`VITE_WHISPER_LANGUAGE=en`).
 - **Phase 13 — Whisper speech engine ✅** — a standalone Cloudflare Worker
   (`whisper-worker/`) using Workers AI `whisper-large-v3-turbo`, plus a
   `WhisperSpeechAdapter` behind the existing adapter interface. Enabled by

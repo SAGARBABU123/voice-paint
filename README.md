@@ -21,7 +21,7 @@ Both are locked decisions — do not change them silently.
 **Post-MVP (P1):** Phase 5 ✅ persistence · Phase 6 ✅ image import/view ·
 Phase 7 ✅ transforms · Phase 8 ✅ text/fill/selection · Phase 9 ✅ colours +
 cross-browser E2E · Phase 10 ✅ a11y hardening · Phase 11 ✅ compound voice
-commands · Phase 12 ✅ Telugu grammar · Phase 13 ✅ Whisper speech engine
+commands · Phase 12 ✅ English grammar (synonyms) · Phase 13 ✅ Whisper speech engine
 (Cloudflare Workers AI) · Phase 14 ✅ PWA packaging · Phase 15 ✅ deploy
 pipeline.
 

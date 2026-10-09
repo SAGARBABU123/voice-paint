@@ -47,20 +47,14 @@ If **any** clause is unknown, the whole phrase fails with a message and nothing
 is drawn — a partial command is never executed. Contradictory input such as
 "undo and redo" is rejected as ambiguous.
 
-## Multilingual (Telugu)
+The grammar is **English** with common synonyms and casual phrasing:
 
-The parser accepts **English**, **Telugu script**, and **romanised Telugu**. The
-typing and execution path is identical — only the spoken words differ:
+- "draw a circle and fill it with red color" / "make a circle"
+- "draw me a rectangle and fill it blue" / "put a box down"
+- "bucket it" / "fill it red" · "save my picture" / "export PNG"
 
-- English: "draw a circle and fill it with red color"
-- Telugu: "వృత్తం గీయి మరియు ఎరుపు నింపు"
-- Romanised: "vrutham geyyi mariyu erupu nimpu"
-
-Colours (ఎరుపు/erupu = red, నీలం/nilam = blue, …), tools
-(వృత్తం/vrutham = circle, …), sizes, and actions (తుడిచి = clear, వెనక్కి =
-undo, …) all map through the same allowlist. Telugu transcriptions must come
-from a recogniser that can produce them — the Whisper Worker can; the browser
-Web Speech API generally cannot.
+Everything maps through the same allowlist; unknown or partially-unrecognized
+phrases fail without touching the canvas.
 
 > Behaviour change: "draw a circle" now **draws** a centred shape (previously it
 > only selected the tool). Say "select circle" or just "circle" to only change
@@ -71,12 +65,12 @@ Web Speech API generally cannot.
 The command grammar is identical for both engines — only recognition changes.
 
 - **Browser Web Speech API** (default): Chromium/Edge only, English-focused,
-  online, and has no reliable Telugu.
+  online.
 - **Whisper Worker** (set `VITE_WHISPER_ENDPOINT` in `.env`): the app records a
   short clip and a Cloudflare Worker transcribes it with
-  `whisper-large-v3-turbo`. Works in Chrome, Edge, Firefox, and Safari; handles
-  Telugu (pass `VITE_WHISPER_LANGUAGE=te`). **Audio leaves the device** and is
-  processed by Cloudflare — say so in the UI. See
+  `whisper-large-v3-turbo`. Works in Chrome, Edge, Firefox, and Safari;
+  **English by default** (`VITE_WHISPER_LANGUAGE=en`). **Audio leaves the device**
+  and is processed by Cloudflare — say so in the UI. See
   [`whisper-worker/README.md`](../whisper-worker/README.md) for deployment.
 
 ## Safety rules

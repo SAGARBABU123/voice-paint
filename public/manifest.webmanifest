@@ -1,7 +1,7 @@
 {
   "name": "Voice Over Paint",
   "short_name": "VoicePaint",
-  "description": "A painting app you can drive by voice, in English or Telugu. Draw naturally. Stay in control.",
+  "description": "A painting app you can drive by voice, in English. Draw naturally. Stay in control.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

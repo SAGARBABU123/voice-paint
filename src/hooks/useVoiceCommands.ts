@@ -23,7 +23,8 @@ function createDefaultAdapter(): SpeechRecognitionAdapter {
   if (endpoint) {
     return new WhisperSpeechAdapter({
       endpoint,
-      language: import.meta.env.VITE_WHISPER_LANGUAGE as string | undefined,
+      // Default to English unless another language is configured.
+      language: (import.meta.env.VITE_WHISPER_LANGUAGE as string | undefined) ?? 'en',
     })
   }
   return new BrowserSpeechAdapter()

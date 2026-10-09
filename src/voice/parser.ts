@@ -2,57 +2,37 @@ import { isShapeTool, type PaintTool } from '../paint/types'
 import { COLOR_NAMES, TOOL_ALIASES } from './grammar'
 import type { CommandParseResult, ParseFailureReason, PaintCommand } from './types'
 
-const SIZE_WORDS = ['size', 'width', 'సైజు', 'పరిమాణం'] as const
-const BRUSH_WORDS = ['brush', 'line', 'stroke', 'బ్రష్'] as const
-const DRAW_WORDS = ['draw', 'add', 'create', 'place', 'గీయి', 'డ్రా', 'geyyi'] as const
-const FILL_WORDS = ['fill', 'bucket', 'నింపు', 'ఫిల్', 'nimpu'] as const
-const UNDO_WORDS = ['undo', 'రద్దు', 'వెనక్కి'] as const
-const REDO_WORDS = ['redo', 'మళ్ళీ', 'రీడూ'] as const
-const CLEAR_WORDS = ['clear', 'wipe', 'తుడిచి', 'క్లియర్', 'తొలగించు'] as const
-const EXPORT_WORDS = ['export', 'download', 'ఎగుమతి', 'డౌన్లోడ్'] as const
-const SAVE_WORDS = ['save', 'సేవ్'] as const
-const HELP_WORDS = ['help', 'సహాయం'] as const
-const WHY_WORDS = ['color', 'colour', 'రంగు'] as const
-const SMALLER_WORDS = ['smaller', 'thinner', 'decrease', 'చిన్న', 'తగ్గించు'] as const
-const LARGER_WORDS = ['bigger', 'larger', 'thicker', 'increase', 'పెద్ద', 'పెంచు'] as const
-const ACTION_WORDS = [
-  'use',
-  'switch',
-  'select',
-  'choose',
-  'draw',
-  'set',
-  'change',
-  'ఎంచుకో',
-  'మార్చు',
-  'పెట్టు',
-  'గీయి',
-] as const
+const SIZE_WORDS = ['size', 'width'] as const
+const BRUSH_WORDS = ['brush', 'line', 'stroke'] as const
+const DRAW_WORDS = ['draw', 'add', 'create', 'make', 'place', 'put', 'give'] as const
+const FILL_WORDS = ['fill', 'bucket', 'flood'] as const
+const UNDO_WORDS = ['undo', 'revert'] as const
+const REDO_WORDS = ['redo', 'restore', 'repeat'] as const
+const CLEAR_WORDS = ['clear', 'wipe', 'empty'] as const
+const EXPORT_WORDS = ['export', 'download'] as const
+const SAVE_WORDS = ['save'] as const
+const FILE_WORDS = ['png', 'image', 'picture', 'file'] as const
+const HELP_WORDS = ['help'] as const
+const WHY_WORDS = ['color', 'colour', 'shade'] as const
+const SMALLER_WORDS = ['smaller', 'thinner', 'decrease', 'shrink'] as const
+const LARGER_WORDS = ['bigger', 'larger', 'thicker', 'increase', 'grow'] as const
+const ACTION_WORDS = ['use', 'switch', 'select', 'choose', 'draw', 'set', 'change', 'make'] as const
 
-/** Connectors that join clauses, with whether Latin word boundaries apply. */
+/** Connectors that join clauses (English). */
 const CONNECTORS: readonly [string, boolean][] = [
   ['and', true],
   ['then', true],
   ['also', true],
-  ['మరియు', false],
-  ['తరువాత', false],
-  ['mariyu', false],
-  ['taruvata', false],
+  ['plus', true],
 ]
 
-/**
- * Lowercases, strips punctuation (keeping `#` and letters from any script such
- * as Telugu), and collapses whitespace.
- */
+/** Lowercases, strips punctuation (keeping `#`), and collapses whitespace. */
 export function normalizeTranscript(transcript: string): string {
-  return (
-    transcript
-      .toLowerCase()
-      // Keep letters, numbers, combining marks (needed for Indic scripts), `#`.
-      .replace(/[^\p{L}\p{N}\p{M}#\s]/gu, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-  )
+  return transcript
+    .toLowerCase()
+    .replace(/[^a-z0-9#\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function escapeRegExp(value: string): string {
@@ -176,10 +156,7 @@ function parseClause(text: string): CommandParseResult {
     }
   }
 
-  if (
-    hasAny(text, SAVE_WORDS) &&
-    hasAny(text, ['png', 'image', 'picture', 'file', 'ఫైల్', 'పిఎన్జి'])
-  ) {
+  if (hasAny(text, SAVE_WORDS) && hasAny(text, FILE_WORDS)) {
     return ok([{ type: 'canvas.export', format: 'png' }])
   }
 
@@ -215,8 +192,7 @@ function parseClause(text: string): CommandParseResult {
  * Deterministic phrase -> commands parser. A phrase may contain several clauses
  * ("draw a circle and fill it red"); each clause is parsed independently and
  * the results are concatenated. If any clause fails, the whole phrase fails so
- * a partial command is never executed. English and Telugu (script or
- * romanised) are both supported.
+ * a partial command is never executed. Grammar is English with common synonyms.
  */
 export function parseCommand(transcript: string): CommandParseResult {
   const text = normalizeTranscript(transcript)

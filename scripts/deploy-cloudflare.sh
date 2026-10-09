@@ -5,7 +5,7 @@
 #   CLOUDFLARE_API_TOKEN   (Pages Edit + Workers Scripts Edit + Workers AI Edit)
 #   CLOUDFLARE_ACCOUNT_ID
 #   VITE_WHISPER_ENDPOINT  (your deployed Whisper worker URL)
-#   VITE_WHISPER_LANGUAGE  (optional, e.g. te)
+#   VITE_WHISPER_LANGUAGE  (optional, default en)
 set -e
 
 ROOT="$(git rev-parse --show-toplevel)"

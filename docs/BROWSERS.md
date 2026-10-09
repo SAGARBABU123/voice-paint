@@ -19,9 +19,10 @@ Voice uses the browser **Web Speech API** (`SpeechRecognition` /
 **With the Whisper Worker** (`VITE_WHISPER_ENDPOINT` set — see
 [`whisper-worker/README.md`](../whisper-worker/README.md) and
 [`VOICE_COMMANDS.md`](./VOICE_COMMANDS.md)), voice works in Chrome, Edge,
-Firefox, and Safari and can recognise Telugu and other languages. It records a
-short clip and sends it to Cloudflare Workers AI. Audio therefore leaves the
-device, and an internet connection is required.
+Firefox, and Safari and recognises **English** by default (another language can
+be selected with `VITE_WHISPER_LANGUAGE`). It records a short clip and sends it
+to Cloudflare Workers AI. Audio therefore leaves the device, and an internet
+connection is required.
 
 Notes:
 

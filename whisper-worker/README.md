@@ -10,14 +10,14 @@ This is separate from the app so the app can stay a small static site.
 
 ```text
 Browser (MediaRecorder)
-  └── POST /?language=te   (raw audio bytes)
+  └── POST /?language=en   (raw audio bytes)
         └── Worker  @cf/openai/whisper-large-v3-turbo
               └── { "text": "..." }
 ```
 
 - **No API key needed** — Workers AI is used through the `AI` binding.
 - **No secrets** are stored in this repository.
-- Query parameters: `language` (optional ISO-639-1, e.g. `te`, `en`) and
+- Query parameters: `language` (optional ISO-639-1, e.g. `en`, `hi`) and
   `task` (`transcribe` default, or `translate`).
 - The free tier is **10,000 Neurons/day**. Set a spend limit of `$0` in the
   Cloudflare dashboard so it can never charge you.
@@ -40,11 +40,12 @@ Then point the app at it by creating a `.env` in the project root:
 
 ```bash
 VITE_WHISPER_ENDPOINT=https://voice-over-paint-whisper.<your-subdomain>.workers.dev
-VITE_WHISPER_LANGUAGE=te
+VITE_WHISPER_LANGUAGE=en
 ```
 
 Rebuild the app (`npm run build`) and voice input goes through Whisper.
-Omit `VITE_WHISPER_LANGUAGE` to let Whisper auto-detect the language.
+The app defaults to English already; set `VITE_WHISPER_LANGUAGE` to another
+supported Whisper language if you need one.
 
 ## Local development
 
