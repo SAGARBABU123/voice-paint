@@ -1,9 +1,11 @@
-import type { PaintTool } from '../paint/types'
+import { isShapeTool, type PaintTool } from '../paint/types'
 import { COLOR_NAMES, TOOL_ALIASES } from './grammar'
 import type { CommandParseResult, ParseFailureReason, PaintCommand } from './types'
 
 const SIZE_WORDS = ['size', 'width'] as const
 const BRUSH_WORDS = ['brush', 'line', 'stroke'] as const
+const DRAW_WORDS = ['draw', 'add', 'create', 'place'] as const
+const FILL_WORDS = ['fill', 'bucket'] as const
 
 /** Lowercases, strips punctuation (keeping `#`), and collapses whitespace. */
 export function normalizeTranscript(transcript: string): string {
@@ -49,13 +51,19 @@ function ok(commands: PaintCommand[]): CommandParseResult {
   return { ok: true, commands }
 }
 
-/**
- * Deterministic phrase -> command parser. It only ever returns allowlisted,
- * typed commands or a structured failure; it never executes anything.
- */
-export function parseCommand(transcript: string): CommandParseResult {
-  const text = normalizeTranscript(transcript)
+/** Splits a phrase into clauses at "and", "then", and "also". */
+function splitClauses(text: string): string[] {
+  return text
+    .split(/\b(?:and|then|also)\b/)
+    .map((clause) => clause.trim())
+    .filter((clause) => clause.length > 0)
+}
 
+/**
+ * Parses a single clause into allowlisted commands. It only ever returns typed
+ * commands or a structured failure and never executes anything.
+ */
+function parseClause(text: string): CommandParseResult {
   if (!text) {
     return failure('unknown', 'I did not catch that. Try saying "use pencil".')
   }
@@ -104,6 +112,27 @@ export function parseCommand(transcript: string): CommandParseResult {
     return ok([{ type: 'brush.size.set', size }])
   }
 
+  // Fill: colour, if named, is applied first so the fill uses it.
+  if (hasAny(text, FILL_WORDS)) {
+    const commands: PaintCommand[] = []
+    if (color) commands.push({ type: 'color.set', color })
+    commands.push({ type: 'canvas.fill' })
+    return ok(commands)
+  }
+
+  // Draw a shape: colour, if named, is set before the shape is drawn.
+  if (hasAny(text, DRAW_WORDS)) {
+    if (tool && isShapeTool(tool)) {
+      const commands: PaintCommand[] = []
+      if (color) commands.push({ type: 'color.set', color })
+      commands.push({ type: 'shape.draw', tool })
+      return ok(commands)
+    }
+    if (!color) {
+      return failure('missing_parameter', 'What should I draw? Try "draw a circle".')
+    }
+  }
+
   if (tool && color) {
     return ok([
       { type: 'color.set', color },
@@ -128,6 +157,40 @@ export function parseCommand(transcript: string): CommandParseResult {
 
   return failure(
     'unknown',
-    `I did not understand "${transcript.trim()}". Try "use pencil" or "set color to red".`,
+    `I did not understand "${text.trim()}". Try "use pencil" or "set color to red".`,
   )
+}
+
+/**
+ * Deterministic phrase -> commands parser. A phrase may contain several clauses
+ * ("draw a circle and fill it red"); each clause is parsed independently and
+ * the results are concatenated. If any clause fails, the whole phrase fails so
+ * a partial command is never executed.
+ */
+export function parseCommand(transcript: string): CommandParseResult {
+  const text = normalizeTranscript(transcript)
+  if (!text) {
+    return failure('unknown', 'I did not catch that. Try saying "use pencil".')
+  }
+
+  // Contradictory history intents stay ambiguous even across a compound phrase.
+  if (hasWord(text, 'undo') && hasWord(text, 'redo')) {
+    return failure('ambiguous', 'Did you mean "undo" or "redo"? Please say one.')
+  }
+
+  const commands: PaintCommand[] = []
+  for (const clause of splitClauses(text)) {
+    const result = parseClause(clause)
+    if (!result.ok) return result
+    commands.push(...result.commands)
+  }
+
+  if (commands.length === 0) {
+    return failure(
+      'unknown',
+      `I did not understand "${transcript.trim()}". Try "use pencil" or "set color to red".`,
+    )
+  }
+
+  return ok(commands)
 }

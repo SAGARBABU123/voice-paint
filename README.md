@@ -21,8 +21,9 @@ Both are locked decisions — do not change them silently.
 **Post-MVP (P1):** Phase 5 — local project persistence ✅. Phase 6 — image import
 · view controls ✅. Phase 7 — document transforms ✅. Phase 8 — text, fill, and
 selection/move ✅. Phase 9 — recent colours, palette polish, and cross-browser E2E
-✅. Phase 10 — reliability and accessibility hardening ✅ (modal focus trapping,
-keyboard-only E2E). Post-MVP P1 scope is complete.
+✅. Phase 10 — reliability and accessibility hardening ✅. Phase 11 — compound
+voice commands ✅ ("draw a circle and fill it red"). Next: multilingual (Telugu)
+voice and app packaging.
 
 ## Stack (locked)
 

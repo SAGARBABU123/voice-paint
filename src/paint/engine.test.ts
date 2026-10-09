@@ -124,6 +124,34 @@ describe('PaintEngine', () => {
     expect(engine.getSnapshot().operationCount).toBe(0)
   })
 
+  it('draws a centred shape with the active colour and size', () => {
+    const engine = new PaintEngine()
+    engine.setColor('#22c55e')
+
+    engine.drawShape('ellipse')
+
+    const operation = engine.getOperations()[0]
+    expect(operation?.kind).toBe('shape')
+    if (operation?.kind === 'shape') {
+      expect(operation.tool).toBe('ellipse')
+      expect(operation.color).toBe('#22c55e')
+      expect(operation.start.x).toBeLessThan(operation.end.x)
+      expect(operation.start.y).toBeLessThan(operation.end.y)
+    }
+  })
+
+  it('draws a centred horizontal line', () => {
+    const engine = new PaintEngine()
+    engine.drawShape('line')
+
+    const operation = engine.getOperations()[0]
+    expect(operation?.kind).toBe('shape')
+    if (operation?.kind === 'shape') {
+      expect(operation.start.y).toBe(operation.end.y)
+      expect(operation.start.x).toBeLessThan(operation.end.x)
+    }
+  })
+
   it('refuses a selection move with no offset or a bad offset', () => {
     const engine = new PaintEngine()
     const rect = { x: 0, y: 0, width: 10, height: 10 }

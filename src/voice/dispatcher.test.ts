@@ -24,6 +24,24 @@ describe('executeCommand', () => {
     expect(engine.getSnapshot().activeTool).toBe('ellipse')
   })
 
+  it('draws a centred shape through the shared engine', async () => {
+    const engine = new PaintEngine()
+    await executeCommand(engine, { type: 'shape.draw', tool: 'ellipse' })
+
+    const operation = engine.getOperations()[0]
+    expect(operation?.kind).toBe('shape')
+    if (operation?.kind === 'shape') expect(operation.tool).toBe('ellipse')
+  })
+
+  it('fills at the document centre through the shared engine', async () => {
+    const engine = new PaintEngine()
+    const fillSpy = vi.spyOn(engine, 'fillAt').mockReturnValue(true)
+
+    await executeCommand(engine, { type: 'canvas.fill' })
+
+    expect(fillSpy).toHaveBeenCalledWith({ x: engine.width / 2, y: engine.height / 2 })
+  })
+
   it('routes colour and absolute size to the engine', async () => {
     const engine = new PaintEngine()
     await executeCommand(engine, { type: 'color.set', color: '#ff0000' })

@@ -165,6 +165,19 @@ describe('useVoiceCommands', () => {
     expect(view.result.current.message).toBe('Microphone blocked')
   })
 
+  it('executes a compound draw-and-fill command', async () => {
+    const { engine, view, emitResult } = setup()
+    act(() => view.result.current.start())
+
+    await act(async () => {
+      emitResult('draw a circle and fill it red')
+    })
+
+    expect(engine.getOperations().some((operation) => operation.kind === 'shape')).toBe(true)
+    expect(engine.getSnapshot().color).toBe('#ef4444')
+    expect(view.result.current.message).toMatch(/drew/i)
+  })
+
   it('opens the help panel on request', async () => {
     const { view, emitResult } = setup()
     act(() => view.result.current.start())

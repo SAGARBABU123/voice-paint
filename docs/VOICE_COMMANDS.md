@@ -15,16 +15,36 @@
 
 ## Command catalogue
 
-| Intent      | Example phrases                                    | Expected behavior              |
-| ----------- | -------------------------------------------------- | ------------------------------ |
-| Select tool | "use pencil", "switch to eraser", "choose ellipse" | Change active tool             |
-| Set color   | "set color to red", "use blue"                     | Update active color            |
-| Set width   | "set brush size to 8", "make the brush smaller"    | Update validated width         |
-| Undo        | "undo", "undo last action"                         | Undo one supported action      |
-| Redo        | "redo", "restore last action"                      | Redo one supported action      |
-| Clear       | "clear canvas"                                     | **Ask for confirmation first** |
-| Export      | "export PNG", "save as PNG"                        | Local PNG download + result    |
-| Help        | "what can I say?", "show voice commands"           | Open command help              |
+| Intent      | Example phrases                                    | Expected behavior                     |
+| ----------- | -------------------------------------------------- | ------------------------------------- |
+| Select tool | "use pencil", "switch to eraser", "choose ellipse" | Change active tool                    |
+| Draw shape  | "draw a circle", "add a rectangle"                 | Draw a shape centred in the document  |
+| Fill        | "fill it red", "fill it"                           | Flood-fill the centre with the colour |
+| Set color   | "set color to red", "use blue"                     | Update active color                   |
+| Set width   | "set brush size to 8", "make the brush smaller"    | Update validated width                |
+| Undo        | "undo", "undo last action"                         | Undo one supported action             |
+| Redo        | "redo", "restore last action"                      | Redo one supported action             |
+| Clear       | "clear canvas"                                     | **Ask for confirmation first**        |
+| Export      | "export PNG", "save as PNG"                        | Local PNG download + result           |
+| Help        | "what can I say?", "show voice commands"           | Open command help                     |
+
+## Compound commands
+
+A phrase may contain several clauses joined by **and**, **then**, or **also**.
+Each clause is parsed independently and the commands run in order through the
+same engine path:
+
+- "draw a circle and fill it with red color" → draw an ellipse, set the colour
+  to red, then flood-fill inside it.
+- "use blue then draw a rectangle" → set the colour, then draw a rectangle.
+
+If **any** clause is unknown, the whole phrase fails with a message and nothing
+is drawn — a partial command is never executed. Contradictory input such as
+"undo and redo" is rejected as ambiguous.
+
+> Behaviour change: "draw a circle" now **draws** a centred shape (previously it
+> only selected the tool). Say "select circle" or just "circle" to only change
+> the tool.
 
 ## Safety rules
 

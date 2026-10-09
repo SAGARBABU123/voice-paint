@@ -1,6 +1,6 @@
 import { MAX_BRUSH_SIZE, MIN_BRUSH_SIZE } from '../paint/constants'
 import { clamp } from '../paint/geometry'
-import { isPaintTool } from '../paint/types'
+import { isPaintTool, isShapeTool } from '../paint/types'
 import type { CommandValidationResult, PaintCommand, ValidationFailureReason } from './types'
 
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/
@@ -41,6 +41,15 @@ function validateCommand(command: PaintCommand): SingleValidation {
   switch (command.type) {
     case 'tool.select':
       if (!isPaintTool(command.tool)) return invalid(`"${String(command.tool)}" is not a tool.`)
+      return { ok: true, command }
+
+    case 'shape.draw':
+      if (!isShapeTool(command.tool)) {
+        return invalid(`"${String(command.tool)}" is not a shape I can draw.`)
+      }
+      return { ok: true, command }
+
+    case 'canvas.fill':
       return { ok: true, command }
 
     case 'color.set': {

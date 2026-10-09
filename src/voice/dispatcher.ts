@@ -51,6 +51,12 @@ export async function executeCommand(
     case 'tool.select':
       engine.setTool(command.tool)
       return
+    case 'shape.draw':
+      engine.drawShape(command.tool)
+      return
+    case 'canvas.fill':
+      engine.fillAt({ x: engine.width / 2, y: engine.height / 2 })
+      return
     case 'color.set':
       engine.setColor(command.color)
       return

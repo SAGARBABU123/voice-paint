@@ -14,6 +14,7 @@ import { exportCanvasAsPng } from './export'
 import { createFillOperation } from './fill'
 import { clamp, clampRectToBounds, type Rect } from './geometry'
 import { History } from './history'
+import { createId } from './id'
 import { createTextOperation } from './text'
 import { createSelectionMask, createSelectionMove } from './selection'
 import {
@@ -23,7 +24,13 @@ import {
   scaleOperations,
   translateOperations,
 } from './transforms'
-import { isPaintTool, type PaintOperation, type PaintTool, type Point } from './types'
+import {
+  isPaintTool,
+  type PaintOperation,
+  type PaintTool,
+  type Point,
+  type ShapeTool,
+} from './types'
 
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/
 
@@ -175,6 +182,33 @@ export class PaintEngine {
     if (!operation) return false
     this.commit(operation)
     return true
+  }
+
+  /**
+   * Draws a shape centred in the document using the active colour and width.
+   * Used by voice commands, which have no pointer position to place a shape.
+   */
+  drawShape(tool: ShapeTool): void {
+    const current = this.current
+    const size = Math.max(24, Math.round(Math.min(current.width, current.height) * 0.4))
+    const centreX = current.width / 2
+    const centreY = current.height / 2
+    const half = size / 2
+
+    const start: Point =
+      tool === 'line' ? { x: centreX - half, y: centreY } : { x: centreX - half, y: centreY - half }
+    const end: Point =
+      tool === 'line' ? { x: centreX + half, y: centreY } : { x: centreX + half, y: centreY + half }
+
+    this.commit({
+      id: createId(),
+      kind: 'shape',
+      tool,
+      color: this.color,
+      size: this.brushSize,
+      start,
+      end,
+    })
   }
 
   /** Cuts a rectangular region to the background, undoably. */

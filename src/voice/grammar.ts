@@ -41,7 +41,9 @@ export const COLOR_NAMES: Readonly<Record<string, string>> = {
 export const COMMAND_EXAMPLES: readonly string[] = [
   'use pencil',
   'switch to eraser',
+  'draw a circle and fill it red',
   'draw a rectangle',
+  'fill it blue',
   'use the red brush',
   'set color to red',
   'set brush size to 8',

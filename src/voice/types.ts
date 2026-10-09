@@ -1,4 +1,4 @@
-import type { PaintTool } from '../paint/types'
+import type { PaintTool, ShapeTool } from '../paint/types'
 
 /**
  * The fixed, allowlisted command set. Voice never produces anything outside
@@ -6,6 +6,8 @@ import type { PaintTool } from '../paint/types'
  */
 export type PaintCommand =
   | { type: 'tool.select'; tool: PaintTool }
+  | { type: 'shape.draw'; tool: ShapeTool }
+  | { type: 'canvas.fill' }
   | { type: 'color.set'; color: string }
   | { type: 'brush.size.set'; size: number }
   | { type: 'brush.size.adjust'; direction: 'smaller' | 'larger' }

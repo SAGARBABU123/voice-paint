@@ -16,13 +16,44 @@ describe('parseCommand — tool selection', () => {
   it.each([
     ['use pencil', 'pencil'],
     ['switch to eraser', 'eraser'],
-    ['draw a rectangle', 'rectangle'],
     ['choose ellipse', 'ellipse'],
     ['pen', 'pencil'],
     ['circle', 'ellipse'],
     ['erase', 'eraser'],
   ])('maps "%s" to tool %s', (phrase, tool) => {
     expect(commandsOf(parseCommand(phrase))).toEqual([{ type: 'tool.select', tool }])
+  })
+})
+
+describe('parseCommand — drawing shapes', () => {
+  it.each([
+    ['draw a circle', 'ellipse'],
+    ['draw a rectangle', 'rectangle'],
+    ['add an ellipse', 'ellipse'],
+    ['create a line', 'line'],
+    ['place a circle', 'ellipse'],
+  ])('maps "%s" to drawing %s', (phrase, tool) => {
+    expect(commandsOf(parseCommand(phrase))).toEqual([{ type: 'shape.draw', tool }])
+  })
+
+  it('sets the colour before drawing when one is named', () => {
+    expect(commandsOf(parseCommand('draw a red circle'))).toEqual([
+      { type: 'color.set', color: '#ef4444' },
+      { type: 'shape.draw', tool: 'ellipse' },
+    ])
+  })
+})
+
+describe('parseCommand — fill', () => {
+  it('fills with the named colour', () => {
+    expect(commandsOf(parseCommand('fill it red'))).toEqual([
+      { type: 'color.set', color: '#ef4444' },
+      { type: 'canvas.fill' },
+    ])
+  })
+
+  it('fills with the active colour when none is named', () => {
+    expect(commandsOf(parseCommand('fill it'))).toEqual([{ type: 'canvas.fill' }])
   })
 })
 
@@ -63,6 +94,44 @@ describe('parseCommand — compound', () => {
       { type: 'color.set', color: '#ef4444' },
       { type: 'tool.select', tool: 'pencil' },
     ])
+  })
+
+  it('draws a circle and fills it with red in one phrase', () => {
+    expect(commandsOf(parseCommand('draw a circle and fill it with red color'))).toEqual([
+      { type: 'shape.draw', tool: 'ellipse' },
+      { type: 'color.set', color: '#ef4444' },
+      { type: 'canvas.fill' },
+    ])
+  })
+
+  it('supports the then and also connectors', () => {
+    expect(commandsOf(parseCommand('use blue then draw a rectangle'))).toEqual([
+      { type: 'color.set', color: '#3b82f6' },
+      { type: 'shape.draw', tool: 'rectangle' },
+    ])
+    expect(commandsOf(parseCommand('set color to green also fill it'))).toEqual([
+      { type: 'color.set', color: '#22c55e' },
+      { type: 'canvas.fill' },
+    ])
+  })
+
+  it('fails the whole phrase when one clause is unknown', () => {
+    const result = parseCommand('draw a circle and make me a sandwich')
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('unknown')
+  })
+
+  it('understands varied phrasings of the same compound', () => {
+    const expected = [
+      { type: 'shape.draw', tool: 'ellipse' },
+      { type: 'color.set', color: '#ef4444' },
+      { type: 'canvas.fill' },
+    ]
+    expect(commandsOf(parseCommand('draw a circle and fill it with red'))).toEqual(expected)
+    expect(commandsOf(parseCommand('circle draw and fill red'))).toEqual(expected)
+    expect(commandsOf(parseCommand('draw a circle and fill it with the red color'))).toEqual(
+      expected,
+    )
   })
 })
 

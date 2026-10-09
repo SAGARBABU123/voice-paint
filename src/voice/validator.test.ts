@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { PaintTool } from '../paint/types'
+import type { PaintTool, ShapeTool } from '../paint/types'
 import { validateCommands } from './validator'
 
 describe('validateCommands', () => {
@@ -15,6 +15,22 @@ describe('validateCommands', () => {
   it('rejects unknown tools', () => {
     const result = validateCommands([
       { type: 'tool.select', tool: 'spray' as unknown as PaintTool },
+    ])
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('invalid_parameter')
+  })
+
+  it('accepts shape draw and canvas fill', () => {
+    const result = validateCommands([
+      { type: 'shape.draw', tool: 'ellipse' },
+      { type: 'canvas.fill' },
+    ])
+    expect(result.ok).toBe(true)
+  })
+
+  it('rejects a draw tool that is not a shape', () => {
+    const result = validateCommands([
+      { type: 'shape.draw', tool: 'pencil' as unknown as ShapeTool },
     ])
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.reason).toBe('invalid_parameter')

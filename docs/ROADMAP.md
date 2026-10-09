@@ -53,3 +53,7 @@ limitations, passing quality gates.
   system libraries are installed), modal focus trapping with focus restoration,
   and keyboard-only E2E coverage for the P1 tools. No new product surface;
   deferred features remain deferred.
+- **Phase 11 — Compound voice commands (English) ✅** — clause splitting on
+  "and/then/also", new allowlisted `shape.draw` and `canvas.fill` intents, and a
+  shared-engine route so "draw a circle and fill it red" works. Deterministic
+  grammar; no LLM. Multilingual (Telugu) and packaging remain later phases.

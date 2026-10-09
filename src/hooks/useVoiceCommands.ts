@@ -39,6 +39,10 @@ function describeCommand(command: PaintCommand): string {
   switch (command.type) {
     case 'tool.select':
       return `Selected ${TOOL_LABELS[command.tool]}`
+    case 'shape.draw':
+      return `Drew ${TOOL_LABELS[command.tool]}`
+    case 'canvas.fill':
+      return 'Filled the shape'
     case 'color.set':
       return `Colour set to ${command.color}`
     case 'brush.size.set':
