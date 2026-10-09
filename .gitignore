@@ -30,6 +30,8 @@ coverage
 whisper-worker/node_modules
 whisper-worker/.wrangler
 whisper-worker/dist
+whisper-worker/local
+**/.venv
 
 # environment
 .env
