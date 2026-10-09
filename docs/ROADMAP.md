@@ -29,7 +29,7 @@ browser checks · E2E for primary flows.
 **Acceptance:** a user can complete a drawing with voice unavailable and recover
 cleanly from voice errors.
 
-## Milestone 4 — MVP release ⏳
+## Milestone 4 — MVP release ✅
 
 README, usage guide, supported-browser note, known limitations · production build
 and smoke tests.

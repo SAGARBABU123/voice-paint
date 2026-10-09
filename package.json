@@ -1,8 +1,12 @@
 {
   "name": "voice-over-paint",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Browser-based painting app with a small, deterministic voice-command MVP.",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

@@ -1,0 +1,41 @@
+# Release & Deployment — Voice Over Paint
+
+## Build
+
+```bash
+npm ci
+npm run build      # outputs a static site to dist/
+npm run preview    # serve dist/ locally at http://localhost:4173
+```
+
+`dist/` contains static HTML/CSS/JS only. There is **no backend, database,
+environment variable, or secret** required.
+
+## Deploy
+
+Serve `dist/` from any static host, for example Netlify, Vercel, GitHub Pages,
+Cloudflare Pages, or an S3 bucket. Because the app is a single screen with no
+client-side routing, no rewrite/redirect rules are needed.
+
+- Build command: `npm run build`
+- Publish directory: `dist`
+
+## Continuous integration
+
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on push and pull
+request:
+
+1. **quality** — `npm ci`, typecheck, lint, format check, unit tests, build.
+2. **e2e** — installs Chromium, builds, and runs the Playwright suite; uploads
+   the HTML report as an artifact.
+
+## Pre-release checklist
+
+- [ ] `npm run typecheck` passes
+- [ ] `npm run lint` passes
+- [ ] `npm run format:check` passes
+- [ ] `npm run test:run` passes
+- [ ] `npm run test:e2e` passes (build + Playwright)
+- [ ] Version bumped in `package.json`
+- [ ] `README.md`, `docs/USAGE.md`, and `docs/BROWSERS.md` are current
+- [ ] Known limitations reviewed and documented
