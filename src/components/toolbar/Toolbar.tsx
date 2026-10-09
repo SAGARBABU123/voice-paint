@@ -1,8 +1,16 @@
 import type { ButtonHTMLAttributes } from 'react'
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
 import { COLOR_PALETTE, MAX_BRUSH_SIZE, MIN_BRUSH_SIZE } from '../../paint/constants'
-import { PAINT_TOOLS } from '../../paint/types'
+import { PAINT_TOOLS, type PaintTool } from '../../paint/types'
 import { TOOL_LABELS } from '../toolLabels'
+
+const TOOL_SHORTCUTS: Record<PaintTool, string> = {
+  pencil: 'P',
+  eraser: 'E',
+  line: 'L',
+  rectangle: 'R',
+  ellipse: 'O',
+}
 
 function buttonClass(active: boolean): string {
   return [
@@ -43,6 +51,8 @@ export function Toolbar() {
             key={tool}
             type="button"
             aria-pressed={state.activeTool === tool}
+            aria-keyshortcuts={TOOL_SHORTCUTS[tool]}
+            title={`${TOOL_LABELS[tool]} (${TOOL_SHORTCUTS[tool]})`}
             className={buttonClass(state.activeTool === tool)}
             onClick={() => engine.setTool(tool)}
           >
@@ -84,6 +94,7 @@ export function Toolbar() {
           min={MIN_BRUSH_SIZE}
           max={MAX_BRUSH_SIZE}
           value={state.brushSize}
+          title="Brush size ( - / + )"
           className="w-40"
           onChange={(event) => engine.setBrushSize(Number(event.target.value))}
         />
@@ -97,16 +108,36 @@ export function Toolbar() {
         role="group"
         aria-label="History and export"
       >
-        <ActionButton disabled={!state.canUndo} onClick={() => engine.undo()}>
+        <ActionButton
+          disabled={!state.canUndo}
+          aria-keyshortcuts="Control+Z"
+          title="Undo (Ctrl/Cmd+Z)"
+          onClick={() => engine.undo()}
+        >
           Undo
         </ActionButton>
-        <ActionButton disabled={!state.canRedo} onClick={() => engine.redo()}>
+        <ActionButton
+          disabled={!state.canRedo}
+          aria-keyshortcuts="Control+Shift+Z"
+          title="Redo (Ctrl/Cmd+Shift+Z)"
+          onClick={() => engine.redo()}
+        >
           Redo
         </ActionButton>
-        <ActionButton disabled={state.operationCount === 0} onClick={handleClear}>
+        <ActionButton
+          disabled={state.operationCount === 0}
+          title="Clear canvas"
+          onClick={handleClear}
+        >
           Clear
         </ActionButton>
-        <ActionButton onClick={handleExport}>Export PNG</ActionButton>
+        <ActionButton
+          aria-keyshortcuts="Control+S"
+          title="Export PNG (Ctrl/Cmd+S)"
+          onClick={handleExport}
+        >
+          Export PNG
+        </ActionButton>
       </div>
     </div>
   )

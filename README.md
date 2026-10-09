@@ -10,13 +10,13 @@ Both are locked decisions — do not change them silently.
 
 ## Status
 
-| Milestone             | Scope                                         | State      |
-| --------------------- | --------------------------------------------- | ---------- |
-| M0 — Foundation       | Editor shell, toolchain, quality gates        | ✅ Done    |
-| M1 — Manual drawing   | Canvas, tools, history, PNG export            | ✅ Done    |
-| M2 — Voice MVP        | Speech adapter, parser, validator, dispatcher | ✅ Done    |
-| M3 — UX & reliability | A11y, errors, E2E                             | ⏳ Next    |
-| M4 — Release          | Docs, CI, static deploy                       | ⏳ Pending |
+| Milestone             | Scope                                         | State   |
+| --------------------- | --------------------------------------------- | ------- |
+| M0 — Foundation       | Editor shell, toolchain, quality gates        | ✅ Done |
+| M1 — Manual drawing   | Canvas, tools, history, PNG export            | ✅ Done |
+| M2 — Voice MVP        | Speech adapter, parser, validator, dispatcher | ✅ Done |
+| M3 — UX & reliability | A11y, errors, E2E                             | ✅ Done |
+| M4 — Release          | Docs, CI, static deploy                       | ⏳ Next |
 
 ## Stack (locked)
 
@@ -36,6 +36,20 @@ Vitest + React Testing Library · ESLint + Prettier · no backend.
 | `npm run format:check` | Prettier check                |
 | `npm test`             | Vitest (watch)                |
 | `npm run test:run`     | Vitest (single run)           |
+| `npm run test:e2e`     | Build + Playwright E2E        |
+
+## Testing
+
+- **Unit / component:** Vitest + React Testing Library (`npm run test:run`).
+- **End-to-end:** Playwright against the production build (`npm run test:e2e`).
+  Install browsers once with `npx playwright install chromium` (on a fresh Linux
+  host you may also need `npx playwright install-deps chromium`).
+
+## Keyboard shortcuts
+
+`P`/`B` pencil · `E` eraser · `L` line · `R` rectangle · `O` ellipse ·
+`-`/`+` brush size · `Ctrl/Cmd+Z` undo · `Ctrl/Cmd+Shift+Z` redo ·
+`Ctrl/Cmd+S` export PNG · `?` toggle the shortcuts panel.
 
 ## Documentation
 

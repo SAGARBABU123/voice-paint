@@ -19,4 +19,10 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Pencil' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Eraser' })).toBeInTheDocument()
   })
+
+  it('shows the drawing hint and the shortcuts control', () => {
+    render(<App />)
+    expect(screen.getByText(/draw here with the mouse/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /shortcuts/i })).toBeInTheDocument()
+  })
 })

@@ -22,7 +22,7 @@ P0 voice commands · clear-confirmation flow.
 **Acceptance:** voice and manual share one engine path; unsupported phrases never
 change the canvas.
 
-## Milestone 3 — UX & reliability ⏳
+## Milestone 3 — UX & reliability ✅
 
 Help panel, tooltips, status messages, keyboard access · error handling and
 browser checks · E2E for primary flows.

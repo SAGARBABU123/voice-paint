@@ -130,17 +130,26 @@ export function CanvasStage() {
   }
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={engine.width}
-      height={engine.height}
-      className="h-auto max-w-full cursor-crosshair touch-none rounded-lg border border-neutral-300 bg-white shadow-sm dark:border-neutral-700"
-      role="img"
-      aria-label="Drawing canvas"
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={finishStroke}
-      onPointerCancel={finishStroke}
-    />
+    <div className="relative w-full max-w-[960px]">
+      <canvas
+        ref={canvasRef}
+        width={engine.width}
+        height={engine.height}
+        className="h-auto w-full cursor-crosshair touch-none rounded-lg border border-neutral-300 bg-white shadow-sm dark:border-neutral-700"
+        role="img"
+        aria-label="Drawing canvas"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={finishStroke}
+        onPointerCancel={finishStroke}
+      />
+      {state.operationCount === 0 ? (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <p className="rounded bg-white/70 px-3 py-1 text-sm text-neutral-500 dark:bg-neutral-900/70 dark:text-neutral-400">
+            Draw here with the mouse, or use the voice button below
+          </p>
+        </div>
+      ) : null}
+    </div>
   )
 }
