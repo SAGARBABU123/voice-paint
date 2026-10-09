@@ -30,6 +30,16 @@ describe('History', () => {
     expect(history.applied).toEqual(['a', 'b'])
   })
 
+  it('tracks the applied count as the cursor moves', () => {
+    const history = new History<string>()
+    history.push('a')
+    history.push('b')
+    expect(history.appliedCount).toBe(2)
+    history.undo()
+    expect(history.appliedCount).toBe(1)
+    expect(history.length).toBe(2)
+  })
+
   it('drops the redo branch when a new entry is pushed after undo', () => {
     const history = new History<string>()
     history.push('a')

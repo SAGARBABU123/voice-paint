@@ -46,8 +46,28 @@
 
 ```ts
 type CommandParseResult =
-  | { ok: true; command: PaintCommand }
+  | { ok: true; commands: PaintCommand[] }
   | { ok: false; reason: 'unknown' | 'ambiguous' | 'missing_parameter'; message: string }
 ```
 
+A phrase may resolve to more than one command (for example "use the red brush"
+sets the colour _and_ the tool), so the parser returns a list. The allowlisted
+`PaintCommand` union is defined in `src/voice/types.ts`.
+
 Failures must produce a helpful message and **must not** mutate the drawing.
+
+## Implementation (Milestone 2)
+
+| Stage                           | File                                         |
+| ------------------------------- | -------------------------------------------- |
+| Speech adapter (Web Speech API) | `src/voice/adapters/BrowserSpeechAdapter.ts` |
+| Grammar / aliases / examples    | `src/voice/grammar.ts`                       |
+| Parser                          | `src/voice/parser.ts`                        |
+| Validator                       | `src/voice/validator.ts`                     |
+| Dispatcher (same engine path)   | `src/voice/dispatcher.ts`                    |
+| React wiring                    | `src/hooks/useVoiceCommands.ts`              |
+| Voice UI                        | `src/components/voice/VoicePanel.tsx`        |
+
+Only **final** transcripts are dispatched. Interim results are shown but never
+executed. `canvas.clear` is returned as `pending` and only runs after the user
+confirms in `ConfirmDialog`.

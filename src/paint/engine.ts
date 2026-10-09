@@ -141,7 +141,7 @@ export class PaintEngine {
       brushSize: this.brushSize,
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
-      operationCount: this.history.length,
+      operationCount: this.history.appliedCount,
       revision: this.revision,
       documentWidth: this.width,
       documentHeight: this.height,

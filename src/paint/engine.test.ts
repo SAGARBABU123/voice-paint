@@ -74,6 +74,7 @@ describe('PaintEngine', () => {
 
     expect(engine.undo()).toBe(true)
     expect(engine.getSnapshot().canRedo).toBe(true)
+    expect(engine.getSnapshot().operationCount).toBe(1)
     expect(engine.getOperations().map((op) => op.id)).toEqual(['a'])
 
     expect(engine.redo()).toBe(true)

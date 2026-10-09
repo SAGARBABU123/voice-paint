@@ -15,7 +15,7 @@ color and width · undo/redo · PNG export · clear with confirmation.
 **Acceptance:** each P0 manual action works consistently and its core logic is
 tested.
 
-## Milestone 2 — Voice MVP ⏳
+## Milestone 2 — Voice MVP ✅
 
 Speech adapter + permission/support states · parser, validator, command registry ·
 P0 voice commands · clear-confirmation flow.

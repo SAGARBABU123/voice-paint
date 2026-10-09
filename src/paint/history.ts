@@ -24,6 +24,10 @@ export class History<T> {
     return this.entries.slice(0, this.index)
   }
 
+  get appliedCount(): number {
+    return this.index
+  }
+
   push(entry: T): void {
     this.entries = this.entries.slice(0, this.index)
     this.entries.push(entry)
