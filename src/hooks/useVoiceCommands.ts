@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { TOOL_LABELS } from '../components/toolLabels'
 import { BrowserSpeechAdapter } from '../voice/adapters/BrowserSpeechAdapter'
+import { WhisperSpeechAdapter } from '../voice/adapters/WhisperSpeechAdapter'
 import type { SpeechRecognitionAdapter, SpeechRecognitionStatus } from '../voice/adapters/types'
 import { dispatchCommands, executeCommand } from '../voice/dispatcher'
 import { parseCommand } from '../voice/parser'
@@ -10,6 +11,22 @@ import { usePaintEngine } from './PaintProvider'
 
 export type UseVoiceCommandsOptions = {
   adapter?: SpeechRecognitionAdapter
+}
+
+/**
+ * Chooses the speech engine. When `VITE_WHISPER_ENDPOINT` is set the app uses
+ * the Whisper Worker (needed for Telugu); otherwise it falls back to the
+ * browser Web Speech API.
+ */
+function createDefaultAdapter(): SpeechRecognitionAdapter {
+  const endpoint = import.meta.env.VITE_WHISPER_ENDPOINT as string | undefined
+  if (endpoint) {
+    return new WhisperSpeechAdapter({
+      endpoint,
+      language: import.meta.env.VITE_WHISPER_LANGUAGE as string | undefined,
+    })
+  }
+  return new BrowserSpeechAdapter()
 }
 
 /**
@@ -74,7 +91,7 @@ function describeCommands(commands: readonly PaintCommand[]): string {
 export function useVoiceCommands(options: UseVoiceCommandsOptions = {}): VoiceCommandController {
   const engine = usePaintEngine()
   const [adapter] = useState<SpeechRecognitionAdapter>(
-    () => options.adapter ?? new BrowserSpeechAdapter(),
+    () => options.adapter ?? createDefaultAdapter(),
   )
   const supported = adapter.isSupported()
 
@@ -127,7 +144,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}): VoiceCo
       setMessage('Voice commands are not supported in this browser.')
       return
     }
-    if (status === 'listening' || status === 'starting') return
+    if (status === 'listening' || status === 'starting' || status === 'transcribing') return
 
     setStatus('starting')
     setMessage('')
@@ -146,16 +163,20 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}): VoiceCo
         setStatus(code === 'not-allowed' || code === 'service-not-allowed' ? 'denied' : 'error')
         setMessage(text)
       },
+      onProcessing: () => setStatus('transcribing'),
       onEnd: () =>
         setStatus((current) =>
-          current === 'listening' || current === 'starting' ? 'idle' : current,
+          current === 'listening' || current === 'starting' || current === 'transcribing'
+            ? 'idle'
+            : current,
         ),
     })
   }, [adapter, handleFinalTranscript, status, supported])
 
   const stop = useCallback(() => {
     adapter.stop()
-    setStatus('idle')
+    // Whisper reports 'transcribing' synchronously from stop(); keep it.
+    setStatus((current) => (current === 'transcribing' ? current : 'idle'))
   }, [adapter])
 
   const confirmPending = useCallback(async () => {

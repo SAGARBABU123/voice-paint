@@ -46,6 +46,19 @@ is drawn — a partial command is never executed. Contradictory input such as
 > only selected the tool). Say "select circle" or just "circle" to only change
 > the tool.
 
+## Speech engines
+
+The command grammar is identical for both engines — only recognition changes.
+
+- **Browser Web Speech API** (default): Chromium/Edge only, English-focused,
+  online, and has no reliable Telugu.
+- **Whisper Worker** (set `VITE_WHISPER_ENDPOINT` in `.env`): the app records a
+  short clip and a Cloudflare Worker transcribes it with
+  `whisper-large-v3-turbo`. Works in Chrome, Edge, Firefox, and Safari; handles
+  Telugu (pass `VITE_WHISPER_LANGUAGE=te`). **Audio leaves the device** and is
+  processed by Cloudflare — say so in the UI. See
+  [`whisper-worker/README.md`](../whisper-worker/README.md) for deployment.
+
 ## Safety rules
 
 - Treat transcripts as untrusted input.

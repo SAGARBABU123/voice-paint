@@ -10,6 +10,7 @@ export type FakeSpeechAdapter = {
   emitResult: (transcript: string, isFinal?: boolean, confidence?: number) => void
   emitError: (code: SpeechRecognitionErrorCode, message?: string) => void
   emitEnd: () => void
+  emitProcessing: () => void
   isStarted: () => boolean
 }
 
@@ -37,6 +38,9 @@ export function createFakeSpeechAdapter(supported = true): FakeSpeechAdapter {
     },
     emitEnd: () => {
       handlers?.onEnd()
+    },
+    emitProcessing: () => {
+      handlers?.onProcessing?.()
     },
     isStarted: () => handlers !== null,
   }

@@ -22,13 +22,16 @@ Both are locked decisions — do not change them silently.
 · view controls ✅. Phase 7 — document transforms ✅. Phase 8 — text, fill, and
 selection/move ✅. Phase 9 — recent colours, palette polish, and cross-browser E2E
 ✅. Phase 10 — reliability and accessibility hardening ✅. Phase 11 — compound
-voice commands ✅ ("draw a circle and fill it red"). Next: multilingual (Telugu)
-voice and app packaging.
+voice commands ✅. Phase 13 — Whisper speech engine ✅ (Cloudflare Workers AI).
+Next: Phase 12 (Telugu grammar) and app packaging (Phase 14).
 
 ## Stack (locked)
 
-React · TypeScript (strict) · Vite · Tailwind CSS · Canvas 2D · Web Speech API ·
-Vitest + React Testing Library · ESLint + Prettier · no backend.
+React · TypeScript (strict) · Vite · Tailwind CSS · Canvas 2D · Vitest + React
+Testing Library · ESLint + Prettier. Speech: browser Web Speech API by default,
+or a Cloudflare Workers AI (Whisper) Worker when `VITE_WHISPER_ENDPOINT` is set.
+The app core remains static and backend-free; the Worker is an optional, separate
+deployment.
 
 ## Scripts
 

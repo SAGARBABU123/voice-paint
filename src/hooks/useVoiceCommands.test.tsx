@@ -178,6 +178,18 @@ describe('useVoiceCommands', () => {
     expect(view.result.current.message).toMatch(/drew/i)
   })
 
+  it('shows a transcribing state while an upload is processing', () => {
+    const { view, emitProcessing } = setup()
+    act(() => view.result.current.start())
+
+    act(() => emitProcessing())
+    expect(view.result.current.status).toBe('transcribing')
+
+    // Stopping must not knock the UI out of the transcribing state.
+    act(() => view.result.current.stop())
+    expect(view.result.current.status).toBe('transcribing')
+  })
+
   it('opens the help panel on request', async () => {
     const { view, emitResult } = setup()
     act(() => view.result.current.start())

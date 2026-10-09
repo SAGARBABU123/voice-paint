@@ -57,3 +57,11 @@ limitations, passing quality gates.
   "and/then/also", new allowlisted `shape.draw` and `canvas.fill` intents, and a
   shared-engine route so "draw a circle and fill it red" works. Deterministic
   grammar; no LLM. Multilingual (Telugu) and packaging remain later phases.
+- **Phase 12 — Telugu / multilingual grammar** _(pending)_ — Telugu aliases for
+  tools, colours, and actions so Telugu transcripts parse into the same
+  allowlisted commands. Needed for end-to-end Telugu.
+- **Phase 13 — Whisper speech engine ✅** — a standalone Cloudflare Worker
+  (`whisper-worker/`) using Workers AI `whisper-large-v3-turbo`, plus a
+  `WhisperSpeechAdapter` behind the existing adapter interface. Enabled by
+  setting `VITE_WHISPER_ENDPOINT`; the browser Web Speech API stays as fallback.
+  The parser, validator, and dispatcher are unchanged.

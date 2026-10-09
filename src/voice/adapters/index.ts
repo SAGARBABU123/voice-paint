@@ -6,3 +6,4 @@ export type {
   SpeechResult,
 } from './types'
 export { BrowserSpeechAdapter } from './BrowserSpeechAdapter'
+export { WhisperSpeechAdapter } from './WhisperSpeechAdapter'

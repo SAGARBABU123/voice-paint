@@ -1,5 +1,5 @@
 export type SpeechRecognitionStatus =
-  'unsupported' | 'idle' | 'starting' | 'listening' | 'denied' | 'error'
+  'unsupported' | 'idle' | 'starting' | 'listening' | 'transcribing' | 'denied' | 'error'
 
 export type SpeechRecognitionErrorCode =
   | 'not-allowed'
@@ -21,6 +21,12 @@ export type SpeechHandlers = {
   onResult: (result: SpeechResult) => void
   onError: (code: SpeechRecognitionErrorCode, message: string) => void
   onEnd: () => void
+  /**
+   * Optional. Adapters that upload recorded audio (e.g. Whisper) call this after
+   * recording stops and before the transcript arrives, so the UI can show a
+   * "transcribing" state. Push-based adapters never call it.
+   */
+  onProcessing?: () => void
 }
 
 /**

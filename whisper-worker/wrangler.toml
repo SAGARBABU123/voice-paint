@@ -1,0 +1,13 @@
+name = "voice-over-paint-whisper"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Workers AI binding. No API key or secret is needed.
+[ai]
+binding = "AI"
+
+[vars]
+# Comma-separated list of allowed browser origins, or "*" while testing.
+# Lock this to your Pages URL in production, e.g.
+#   ALLOWED_ORIGINS = "https://voice-over-paint.pages.dev"
+ALLOWED_ORIGINS = "*"

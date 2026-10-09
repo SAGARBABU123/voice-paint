@@ -26,6 +26,15 @@ dist-ssr
 # test coverage
 coverage
 
+# cloudflare worker
+whisper-worker/node_modules
+whisper-worker/.wrangler
+whisper-worker/dist
+
+# environment
+.env
+.env.local
+
 # playwright
 /test-results/
 /playwright-report/

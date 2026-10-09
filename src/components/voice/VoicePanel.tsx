@@ -11,6 +11,7 @@ const STATUS_TEXT: Record<string, string> = {
   unsupported: 'Voice commands are not supported in this browser. Draw manually.',
   starting: 'Starting…',
   listening: 'Listening…',
+  transcribing: 'Transcribing…',
   denied: 'Microphone access was blocked. Enable it in your browser, or draw manually.',
   error: 'Something went wrong. You can try again or draw manually.',
   idle: 'Ready. Press Start voice control and speak a command.',
