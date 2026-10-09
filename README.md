@@ -13,8 +13,8 @@ Both are locked decisions — do not change them silently.
 | Milestone             | Scope                                         | State      |
 | --------------------- | --------------------------------------------- | ---------- |
 | M0 — Foundation       | Editor shell, toolchain, quality gates        | ✅ Done    |
-| M1 — Manual drawing   | Canvas, tools, history, PNG export            | ⏳ Next    |
-| M2 — Voice MVP        | Speech adapter, parser, validator, dispatcher | ⏳ Pending |
+| M1 — Manual drawing   | Canvas, tools, history, PNG export            | ✅ Done    |
+| M2 — Voice MVP        | Speech adapter, parser, validator, dispatcher | ⏳ Next    |
 | M3 — UX & reliability | A11y, errors, E2E                             | ⏳ Pending |
 | M4 — Release          | Docs, CI, static deploy                       | ⏳ Pending |
 

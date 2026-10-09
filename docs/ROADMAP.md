@@ -8,7 +8,7 @@ Confirm feature list and command grammar · set up React + TS + Vite + Tailwind 
 lint/format/tests · basic editor shell.
 **Acceptance:** clean install; dev, typecheck, lint, and test commands all pass.
 
-## Milestone 1 — Manual drawing ⏳
+## Milestone 1 — Manual drawing ✅
 
 Canvas scaling + coordinate mapping · pencil, eraser, line, rectangle, ellipse ·
 color and width · undo/redo · PNG export · clear with confirmation.
