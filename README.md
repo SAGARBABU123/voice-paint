@@ -21,7 +21,8 @@ Both are locked decisions — do not change them silently.
 **Post-MVP (P1):** Phase 5 — local project persistence ✅. Phase 6 — image import
 · view controls ✅. Phase 7 — document transforms ✅. Phase 8 — text, fill, and
 selection/move ✅. Phase 9 — recent colours, palette polish, and cross-browser E2E
-✅. Post-MVP P1 scope is complete.
+✅. Phase 10 — reliability and accessibility hardening ✅ (modal focus trapping,
+keyboard-only E2E). Post-MVP P1 scope is complete.
 
 ## Stack (locked)
 
@@ -30,18 +31,21 @@ Vitest + React Testing Library · ESLint + Prettier · no backend.
 
 ## Scripts
 
-| Command                | Purpose                       |
-| ---------------------- | ----------------------------- |
-| `npm run dev`          | Start the dev server          |
-| `npm run build`        | Type-check + production build |
-| `npm run preview`      | Preview the production build  |
-| `npm run typecheck`    | `tsc -b`                      |
-| `npm run lint`         | ESLint                        |
-| `npm run format`       | Prettier write                |
-| `npm run format:check` | Prettier check                |
-| `npm test`             | Vitest (watch)                |
-| `npm run test:run`     | Vitest (single run)           |
-| `npm run test:e2e`     | Build + Playwright E2E        |
+| Command                     | Purpose                       |
+| --------------------------- | ----------------------------- |
+| `npm run dev`               | Start the dev server          |
+| `npm run build`             | Type-check + production build |
+| `npm run preview`           | Preview the production build  |
+| `npm run typecheck`         | `tsc -b`                      |
+| `npm run lint`              | ESLint                        |
+| `npm run format`            | Prettier write                |
+| `npm run format:check`      | Prettier check                |
+| `npm test`                  | Vitest (watch)                |
+| `npm run test:run`          | Vitest (single run)           |
+| `npm run test:e2e`          | Build + Playwright E2E        |
+| `npm run test:e2e:chromium` | E2E on Chromium only          |
+| `npm run test:e2e:firefox`  | E2E on Firefox only           |
+| `npm run test:e2e:webkit`   | E2E on WebKit only            |
 
 ## Testing
 
@@ -49,7 +53,8 @@ Vitest + React Testing Library · ESLint + Prettier · no backend.
 - **End-to-end:** Playwright against the production build, across Chromium,
   Firefox, and WebKit (`npm run test:e2e`). Install browsers once with
   `npx playwright install chromium firefox webkit` (on a fresh Linux host you may
-  also need `npx playwright install-deps`).
+  also need `npx playwright install-deps`). Run a single browser with
+  `npm run test:e2e:chromium` (also `:firefox`, `:webkit`).
 
 ## Keyboard shortcuts
 

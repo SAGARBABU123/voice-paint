@@ -48,3 +48,8 @@ limitations, passing quality gates.
 - **Phase 9 — Recent colours, palette polish, cross-browser E2E ✅** — recent
   swatches (persisted locally), a current-colour chip, and Playwright projects
   for Chromium, Firefox, and WebKit.
+- **Phase 10 — Reliability & accessibility hardening ✅** — per-browser E2E
+  scripts (Chromium and Firefox verified locally; WebKit runs in CI where its
+  system libraries are installed), modal focus trapping with focus restoration,
+  and keyboard-only E2E coverage for the P1 tools. No new product surface;
+  deferred features remain deferred.

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 type ResizeDialogProps = {
   initialWidth: number
@@ -20,19 +21,14 @@ export function ResizeDialog({
   const [width, setWidth] = useState(String(initialWidth))
   const [height, setHeight] = useState(String(initialHeight))
   const widthRef = useRef<HTMLInputElement>(null)
+  const dialogRef = useRef<HTMLFormElement>(null)
+
+  useFocusTrap(dialogRef, onCancel)
 
   useEffect(() => {
     widthRef.current?.focus()
     widthRef.current?.select()
   }, [])
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCancel()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onCancel])
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -46,6 +42,7 @@ export function ResizeDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <form
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="resize-title"

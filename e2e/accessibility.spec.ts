@@ -42,3 +42,38 @@ test('shows the voice command help', async ({ page }) => {
   await expect(help).toBeVisible()
   await expect(help.getByText('set color to red')).toBeVisible()
 })
+
+test('supports keyboard shortcuts for the text, fill, and select tools', async ({ page }) => {
+  await page.keyboard.press('t')
+  await expect(page.getByRole('button', { name: 'Text', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+
+  await page.keyboard.press('f')
+  await expect(page.getByRole('button', { name: 'Fill', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+
+  await page.keyboard.press('m')
+  await expect(page.getByRole('button', { name: 'Select', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+})
+
+test('traps focus in the resize dialog and restores it on Escape', async ({ page }) => {
+  const resizeTrigger = page.getByRole('button', { name: 'Resize', exact: true })
+  await resizeTrigger.click()
+
+  const dialog = page.getByRole('dialog', { name: 'Resize document' })
+  await expect(dialog).toBeVisible()
+
+  await page.keyboard.press('Shift+Tab')
+  expect(await dialog.evaluate((node) => node.contains(document.activeElement))).toBe(true)
+
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  await expect(resizeTrigger).toBeFocused()
+})

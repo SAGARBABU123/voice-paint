@@ -19,6 +19,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "npm run build && playwright test",
+    "test:e2e:chromium": "npm run build && playwright test --project=chromium",
+    "test:e2e:firefox": "npm run build && playwright test --project=firefox",
+    "test:e2e:webkit": "npm run build && playwright test --project=webkit",
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
