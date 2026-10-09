@@ -73,4 +73,14 @@ describe('History', () => {
     expect(history.canUndo).toBe(false)
     expect(history.canRedo).toBe(false)
   })
+
+  it('replaces the entries and resets the cursor', () => {
+    const history = new History<string>()
+    history.push('a')
+    history.undo()
+    history.replace(['x', 'y'])
+    expect(history.applied).toEqual(['x', 'y'])
+    expect(history.appliedCount).toBe(2)
+    expect(history.canRedo).toBe(false)
+  })
 })

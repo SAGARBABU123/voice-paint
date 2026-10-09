@@ -37,4 +37,5 @@ Notes:
   changing the canvas.
 - **No layers, filters, text, crop, zoom, or cloud storage** — deferred by scope.
 - **No backend, accounts, or analytics** — the app is a static site and stores
-  nothing server-side.
+  nothing server-side. Drawings are kept in the browser's IndexedDB by default;
+  clearing site data or using private browsing removes them.

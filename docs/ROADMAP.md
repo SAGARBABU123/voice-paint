@@ -38,5 +38,9 @@ limitations, passing quality gates.
 
 ## Post-MVP (P1) — requires explicit approval
 
-PNG/JPEG import · text tool · fill/crop/rotate/resize/zoom · improved selection ·
-recent colors · IndexedDB persistence · full cross-browser E2E.
+- **Phase 5 — Local project persistence ✅** — autosave and restore via
+  IndexedDB.
+- **Phase 6 — Image import & view controls** — open PNG/JPEG, zoom, pan, crop,
+  rotate, resize.
+- **Phase 7 — Text, fill, selection/move.**
+- **Phase 8 — Recent colours, palette polish, cross-browser E2E.**

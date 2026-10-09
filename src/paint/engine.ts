@@ -123,6 +123,12 @@ export class PaintEngine {
     this.emit()
   }
 
+  /** Replaces the document with a saved set of operations. */
+  loadOperations(operations: readonly PaintOperation[]): void {
+    this.history.replace(operations)
+    this.emit()
+  }
+
   async exportPng(filename = 'voice-over-paint.png'): Promise<void> {
     if (!this.canvas) throw new Error('Canvas is not attached yet.')
     await exportCanvasAsPng(this.canvas, filename)

@@ -18,6 +18,10 @@ Both are locked decisions — do not change them silently.
 | M3 — UX & reliability | A11y, errors, E2E                             | ✅ Done |
 | M4 — Release          | Docs, CI, static deploy                       | ✅ Done |
 
+**Post-MVP (P1):** Phase 5 — local project persistence ✅ (IndexedDB autosave &
+restore). Next: image import + view controls, text/fill, recent colours,
+cross-browser E2E.
+
 ## Stack (locked)
 
 React · TypeScript (strict) · Vite · Tailwind CSS · Canvas 2D · Web Speech API ·

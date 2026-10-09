@@ -1,7 +1,21 @@
 import { usePaintSnapshot } from '../../hooks/PaintProvider'
+import type { PersistenceStatus } from '../../hooks/useProjectPersistence'
 import { TOOL_LABELS } from '../toolLabels'
 
-export function StatusBar() {
+const PERSISTENCE_LABEL: Record<PersistenceStatus, string> = {
+  loading: 'Restoring…',
+  ready: 'Autosave on',
+  saving: 'Saving…',
+  saved: 'Saved',
+  error: 'Save failed',
+  unavailable: 'Local storage unavailable',
+}
+
+type StatusBarProps = {
+  persistence?: PersistenceStatus
+}
+
+export function StatusBar({ persistence }: StatusBarProps = {}) {
   const state = usePaintSnapshot()
   const operationLabel = `${state.operationCount} operation${state.operationCount === 1 ? '' : 's'}`
 
@@ -18,6 +32,12 @@ export function StatusBar() {
       <span>Color {state.color}</span>
       <span aria-hidden="true">·</span>
       <span>{operationLabel}</span>
+      {persistence ? (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{PERSISTENCE_LABEL[persistence]}</span>
+        </>
+      ) : null}
     </footer>
   )
 }

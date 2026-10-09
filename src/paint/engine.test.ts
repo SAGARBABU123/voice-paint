@@ -95,6 +95,18 @@ describe('PaintEngine', () => {
     expect(engine.getSnapshot().canUndo).toBe(false)
   })
 
+  it('loads a saved set of operations as a fresh history', () => {
+    const engine = new PaintEngine()
+    engine.commit(stroke('old'))
+
+    engine.loadOperations([stroke('a'), stroke('b')])
+
+    expect(engine.getOperations().map((operation) => operation.id)).toEqual(['a', 'b'])
+    expect(engine.getSnapshot().operationCount).toBe(2)
+    expect(engine.getSnapshot().canUndo).toBe(true)
+    expect(engine.getSnapshot().canRedo).toBe(false)
+  })
+
   it('notifies subscribers on change', () => {
     const engine = new PaintEngine()
     const listener = vi.fn()

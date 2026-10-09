@@ -14,6 +14,10 @@ For a production build, see [`RELEASE.md`](./RELEASE.md).
 The document is a fixed 960 × 720 canvas that scales to fit the window. Draw by
 dragging on the canvas with a mouse, finger, or stylus.
 
+**Your work is saved automatically.** The drawing is stored locally with
+IndexedDB and restored when you reopen the app in the same browser. The status
+bar shows `Saving…` / `Saved`. Nothing is sent to a server.
+
 | Tool      | What it does                                     |
 | --------- | ------------------------------------------------ |
 | Pencil    | Freehand stroke in the active colour             |

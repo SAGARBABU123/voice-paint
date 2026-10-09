@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
+import { useProjectPersistence } from '../../hooks/useProjectPersistence'
 import { CanvasStage } from '../canvas/CanvasStage'
 import { Toolbar } from '../toolbar/Toolbar'
 import { VoicePanel } from '../voice/VoicePanel'
@@ -9,6 +10,7 @@ import { StatusBar } from './StatusBar'
 export function EditorShell() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const toggleShortcuts = useCallback(() => setShortcutsOpen((open) => !open), [])
+  const persistence = useProjectPersistence()
 
   useKeyboardShortcuts({ onToggleShortcuts: toggleShortcuts })
 
@@ -42,7 +44,7 @@ export function EditorShell() {
       ) : null}
 
       <VoicePanel />
-      <StatusBar />
+      <StatusBar persistence={persistence.status} />
     </div>
   )
 }

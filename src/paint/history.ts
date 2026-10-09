@@ -28,6 +28,12 @@ export class History<T> {
     return this.index
   }
 
+  /** Replaces the entire entry list, e.g. when loading a saved project. */
+  replace(entries: readonly T[]): void {
+    this.entries = entries.slice()
+    this.index = this.entries.length
+  }
+
   push(entry: T): void {
     this.entries = this.entries.slice(0, this.index)
     this.entries.push(entry)
