@@ -8,11 +8,12 @@ import {
 } from 'react'
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
 import { useViewport } from '../../hooks/useViewport'
+import { clamp01, partialOperation } from '../../paint/animate'
 import { clientToDocumentPoint } from '../../paint/coordinates'
 import { containsPoint, distance, normalizeRect, type Rect } from '../../paint/geometry'
 import { createId } from '../../paint/id'
 import { getCachedImage, preloadImages } from '../../paint/imageCache'
-import { renderScene } from '../../paint/renderer'
+import { renderScene, type PreviewItem } from '../../paint/renderer'
 import {
   isImageOperation,
   isShapeTool,
@@ -49,6 +50,11 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   const cropStartRef = useRef<Point | null>(null)
   const selectionStartRef = useRef<Point | null>(null)
   const moveRef = useRef<{ origin: Rect; start: Point } | null>(null)
+  // Hand-drawn reveal animation for non-pointer (e.g. voice) operations.
+  const extraPreviewRef = useRef<readonly PreviewItem[]>([])
+  const prevOpCountRef = useRef<number | null>(null)
+  const lastPointerAtRef = useRef(0)
+  const animFrameRef = useRef<number | null>(null)
   const [textDraft, setTextDraft] = useState<{ x: number; y: number; value: string } | null>(null)
   const [selection, setSelection] = useState<Rect | null>(null)
   const [draftTool, setDraftTool] = useState(state.activeTool)
@@ -74,11 +80,17 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   const paint = useCallback(() => {
     const context = contextRef.current
     if (!context) return
+    const previews = extraPreviewRef.current
+    const animating =
+      previews.length > 0 ? new Set(previews.map((item) => item.operation.id)) : null
+    const operations = animating
+      ? engine.getOperations().filter((operation) => !animating.has(operation.id))
+      : engine.getOperations()
     renderScene(context, {
       width: engine.width,
       height: engine.height,
-      operations: engine.getOperations(),
-      preview: draftRef.current,
+      operations,
+      preview: previews.length > 0 ? previews : draftRef.current,
       background: engine.background,
       resolveImage: getCachedImage,
     })
@@ -95,6 +107,51 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
       contextRef.current = null
     }
   }, [engine, paint])
+
+  // Reveal each new non-pointer operation like it is being drawn by hand.
+  useEffect(() => {
+    const ops = engine.getOperations()
+    const previous = prevOpCountRef.current
+    prevOpCountRef.current = ops.length
+    if (previous === null || ops.length <= previous) return
+
+    const delta = ops.slice(previous)
+    if (delta.every((operation) => operation.kind === 'stroke')) return
+    // Manual actions happen right after pointer activity; voice actions do not.
+    if (Date.now() - lastPointerAtRef.current < 500) return
+
+    const duration = 200 * delta.length + 120
+    const start = performance.now()
+    const schedule = (callback: FrameRequestCallback): number =>
+      typeof requestAnimationFrame === 'function'
+        ? requestAnimationFrame(callback)
+        : window.setTimeout(() => callback(performance.now() + 16), 16)
+
+    const tick = (now: number) => {
+      const progress = clamp01((now - start) / duration)
+      const staged = clamp01(progress * delta.length)
+      extraPreviewRef.current = delta.map((operation, index) => ({
+        operation: partialOperation(operation, clamp01(staged - index)),
+        alpha: operation.kind === 'image' ? clamp01(staged - index) : undefined,
+      }))
+      paint()
+      if (progress < 1) {
+        animFrameRef.current = schedule(tick)
+      } else {
+        extraPreviewRef.current = []
+        animFrameRef.current = null
+        paint()
+      }
+    }
+    animFrameRef.current = schedule(tick)
+  }, [engine, paint, state.revision])
+
+  useEffect(() => {
+    return () => {
+      if (animFrameRef.current !== null) cancelAnimationFrame(animFrameRef.current)
+      extraPreviewRef.current = []
+    }
+  }, [])
 
   // Decode any newly imported images before repainting.
   useEffect(() => {
@@ -180,6 +237,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   }
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    lastPointerAtRef.current = Date.now()
     if (event.pointerType === 'mouse' && event.button !== 0) return
 
     if (cropMode) {
@@ -247,6 +305,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   }
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    lastPointerAtRef.current = Date.now()
     if (cropMode) {
       const start = cropStartRef.current
       if (!start) return
@@ -287,6 +346,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   }
 
   const finishStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    lastPointerAtRef.current = Date.now()
     if (cropMode) {
       cropStartRef.current = null
       releasePointer(event.pointerId)

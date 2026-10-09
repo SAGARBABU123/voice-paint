@@ -17,6 +17,7 @@ function createFakeContext() {
     calls,
     fillStyle: '',
     strokeStyle: '',
+    globalAlpha: 1,
     lineWidth: 0,
     lineCap: '',
     lineJoin: '',
@@ -187,6 +188,14 @@ describe('renderOperation — image', () => {
   })
 })
 
+describe('renderOperation — alpha', () => {
+  it('applies the given opacity', () => {
+    const ctx = createFakeContext()
+    renderOperation(ctx, shape('line'), undefined, 0.25)
+    expect(ctx.globalAlpha).toBe(0.25)
+  })
+})
+
 describe('renderScene', () => {
   it('clears, paints the background, then renders operations and preview', () => {
     const ctx = createFakeContext()
@@ -216,6 +225,18 @@ describe('renderScene', () => {
       resolveImage: () => source,
     })
     expect(methods(ctx)).toContain('drawImage')
+  })
+
+  it('renders a preview list with per-item opacity', () => {
+    const ctx = createFakeContext()
+    renderScene(ctx, {
+      width: 10,
+      height: 10,
+      operations: [],
+      preview: [{ operation: shape('line'), alpha: 0.5 }, { operation: shape('ellipse') }],
+    })
+    expect(methods(ctx)).toContain('lineTo')
+    expect(methods(ctx)).toContain('ellipse')
   })
 
   it('renders without a preview', () => {

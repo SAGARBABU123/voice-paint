@@ -52,7 +52,7 @@ export async function executeCommand(
       engine.setTool(command.tool)
       return
     case 'shape.draw':
-      engine.drawShape(command.tool)
+      engine.drawShapes(command.tool, command.count ?? 1, command.placement ?? 'center')
       return
     case 'canvas.fill':
       engine.fillAt({ x: engine.width / 2, y: engine.height / 2 })

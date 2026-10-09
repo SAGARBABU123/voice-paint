@@ -1,7 +1,19 @@
 import { MAX_BRUSH_SIZE, MIN_BRUSH_SIZE } from '../paint/constants'
 import { clamp } from '../paint/geometry'
+import { MAX_SHAPES, type ShapePlacement } from '../paint/placement'
 import { isPaintTool, isShapeTool } from '../paint/types'
 import type { CommandValidationResult, PaintCommand, ValidationFailureReason } from './types'
+
+const PLACEMENTS: readonly ShapePlacement[] = [
+  'center',
+  'row',
+  'top',
+  'bottom',
+  'left',
+  'right',
+  'corners',
+  'sides',
+]
 
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/
 
@@ -43,11 +55,18 @@ function validateCommand(command: PaintCommand): SingleValidation {
       if (!isPaintTool(command.tool)) return invalid(`"${String(command.tool)}" is not a tool.`)
       return { ok: true, command }
 
-    case 'shape.draw':
+    case 'shape.draw': {
       if (!isShapeTool(command.tool)) {
         return invalid(`"${String(command.tool)}" is not a shape I can draw.`)
       }
-      return { ok: true, command }
+      const count =
+        command.count === undefined ? undefined : clamp(Math.round(command.count), 1, MAX_SHAPES)
+      const placement = command.placement ?? 'center'
+      if (!PLACEMENTS.includes(placement)) {
+        return invalid(`"${placement}" is not a placement I know.`)
+      }
+      return { ok: true, command: { ...command, count, placement } }
+    }
 
     case 'canvas.fill':
       return { ok: true, command }

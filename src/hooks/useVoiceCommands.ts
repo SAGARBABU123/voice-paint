@@ -68,8 +68,12 @@ function describeCommand(command: PaintCommand): string {
   switch (command.type) {
     case 'tool.select':
       return `Selected ${TOOL_LABELS[command.tool]}`
-    case 'shape.draw':
-      return `Drew ${TOOL_LABELS[command.tool]}`
+    case 'shape.draw': {
+      const count = command.count ?? 1
+      return count > 1
+        ? `Drew ${count} ${TOOL_LABELS[command.tool]}s`
+        : `Drew ${TOOL_LABELS[command.tool]}`
+    }
     case 'canvas.fill':
       return 'Filled the shape'
     case 'color.set':

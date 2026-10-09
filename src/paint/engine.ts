@@ -15,6 +15,7 @@ import { createFillOperation } from './fill'
 import { clamp, clampRectToBounds, type Rect } from './geometry'
 import { History } from './history'
 import { createId } from './id'
+import { placeShapes, type ShapePlacement } from './placement'
 import { createTextOperation } from './text'
 import { createSelectionMask, createSelectionMove } from './selection'
 import {
@@ -185,30 +186,45 @@ export class PaintEngine {
   }
 
   /**
-   * Draws a shape centred in the document using the active colour and width.
+   * Draws one shape centred in the document using the active colour and width.
    * Used by voice commands, which have no pointer position to place a shape.
    */
   drawShape(tool: ShapeTool): void {
+    this.drawShapes(tool, 1, 'center')
+  }
+
+  /**
+   * Draws `count` shapes at deterministic positions for voice commands:
+   * default centre, along an edge, in the corners, or around all sides.
+   */
+  drawShapes(tool: ShapeTool, count = 1, placement: ShapePlacement = 'center'): void {
     const current = this.current
-    const size = Math.max(24, Math.round(Math.min(current.width, current.height) * 0.4))
-    const centreX = current.width / 2
-    const centreY = current.height / 2
+    const n = Math.max(1, Math.round(count) || 1)
+    const basis = Math.min(current.width, current.height)
+    const size =
+      n === 1 ? Math.max(24, basis * 0.4) : Math.max(16, basis / (2 * Math.max(n, 2) + 2))
     const half = size / 2
+    const points = placeShapes(placement, n, current.width, current.height)
 
-    const start: Point =
-      tool === 'line' ? { x: centreX - half, y: centreY } : { x: centreX - half, y: centreY - half }
-    const end: Point =
-      tool === 'line' ? { x: centreX + half, y: centreY } : { x: centreX + half, y: centreY + half }
-
-    this.commit({
-      id: createId(),
-      kind: 'shape',
-      tool,
-      color: this.color,
-      size: this.brushSize,
-      start,
-      end,
-    })
+    for (const point of points) {
+      const start: Point =
+        tool === 'line'
+          ? { x: point.x - half, y: point.y }
+          : { x: point.x - half, y: point.y - half }
+      const end: Point =
+        tool === 'line'
+          ? { x: point.x + half, y: point.y }
+          : { x: point.x + half, y: point.y + half }
+      this.commit({
+        id: createId(),
+        kind: 'shape',
+        tool,
+        color: this.color,
+        size: this.brushSize,
+        start,
+        end,
+      })
+    }
   }
 
   /** Cuts a rectangular region to the background, undoably. */

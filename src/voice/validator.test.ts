@@ -28,6 +28,21 @@ describe('validateCommands', () => {
     expect(result.ok).toBe(true)
   })
 
+  it('clamps shape counts and defaults the placement', () => {
+    const result = validateCommands([{ type: 'shape.draw', tool: 'ellipse', count: 999 }])
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.commands[0]).toMatchObject({ count: 20, placement: 'center' })
+    }
+  })
+
+  it('rejects an unknown shape placement', () => {
+    const result = validateCommands([
+      { type: 'shape.draw', tool: 'ellipse', placement: 'diagonal' as never },
+    ])
+    expect(result.ok).toBe(false)
+  })
+
   it('rejects a draw tool that is not a shape', () => {
     const result = validateCommands([
       { type: 'shape.draw', tool: 'pencil' as unknown as ShapeTool },

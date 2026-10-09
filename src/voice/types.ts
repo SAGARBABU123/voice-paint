@@ -1,3 +1,4 @@
+import type { ShapePlacement } from '../paint/placement'
 import type { PaintTool, ShapeTool } from '../paint/types'
 
 /**
@@ -6,7 +7,7 @@ import type { PaintTool, ShapeTool } from '../paint/types'
  */
 export type PaintCommand =
   | { type: 'tool.select'; tool: PaintTool }
-  | { type: 'shape.draw'; tool: ShapeTool }
+  | { type: 'shape.draw'; tool: ShapeTool; count?: number; placement?: ShapePlacement }
   | { type: 'canvas.fill' }
   | { type: 'color.set'; color: string }
   | { type: 'brush.size.set'; size: number }

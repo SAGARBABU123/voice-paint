@@ -33,13 +33,15 @@ describe('parseCommand — drawing shapes', () => {
     ['create a line', 'line'],
     ['place a circle', 'ellipse'],
   ])('maps "%s" to drawing %s', (phrase, tool) => {
-    expect(commandsOf(parseCommand(phrase))).toEqual([{ type: 'shape.draw', tool }])
+    expect(commandsOf(parseCommand(phrase))).toEqual([
+      { type: 'shape.draw', tool, count: 1, placement: 'center' },
+    ])
   })
 
   it('sets the colour before drawing when one is named', () => {
     expect(commandsOf(parseCommand('draw a red circle'))).toEqual([
       { type: 'color.set', color: '#ef4444' },
-      { type: 'shape.draw', tool: 'ellipse' },
+      { type: 'shape.draw', tool: 'ellipse', count: 1, placement: 'center' },
     ])
   })
 })
@@ -98,7 +100,7 @@ describe('parseCommand — compound', () => {
 
   it('draws a circle and fills it with red in one phrase', () => {
     expect(commandsOf(parseCommand('draw a circle and fill it with red color'))).toEqual([
-      { type: 'shape.draw', tool: 'ellipse' },
+      { type: 'shape.draw', tool: 'ellipse', count: 1, placement: 'center' },
       { type: 'color.set', color: '#ef4444' },
       { type: 'canvas.fill' },
     ])
@@ -107,7 +109,7 @@ describe('parseCommand — compound', () => {
   it('supports the then and also connectors', () => {
     expect(commandsOf(parseCommand('use blue then draw a rectangle'))).toEqual([
       { type: 'color.set', color: '#3b82f6' },
-      { type: 'shape.draw', tool: 'rectangle' },
+      { type: 'shape.draw', tool: 'rectangle', count: 1, placement: 'center' },
     ])
     expect(commandsOf(parseCommand('set color to green also fill it'))).toEqual([
       { type: 'color.set', color: '#22c55e' },
@@ -123,7 +125,7 @@ describe('parseCommand — compound', () => {
 
   it('understands varied phrasings of the same compound', () => {
     const expected = [
-      { type: 'shape.draw', tool: 'ellipse' },
+      { type: 'shape.draw', tool: 'ellipse', count: 1, placement: 'center' },
       { type: 'color.set', color: '#ef4444' },
       { type: 'canvas.fill' },
     ]
@@ -138,20 +140,46 @@ describe('parseCommand — compound', () => {
 describe('parseCommand — English variants and slang', () => {
   it('understands casual drawing phrases', () => {
     expect(commandsOf(parseCommand('make a circle'))).toEqual([
-      { type: 'shape.draw', tool: 'ellipse' },
+      { type: 'shape.draw', tool: 'ellipse', count: 1, placement: 'center' },
     ])
     expect(commandsOf(parseCommand('give me a square'))).toEqual([
-      { type: 'shape.draw', tool: 'rectangle' },
+      { type: 'shape.draw', tool: 'rectangle', count: 1, placement: 'center' },
     ])
     expect(commandsOf(parseCommand('put a box down'))).toEqual([
-      { type: 'shape.draw', tool: 'rectangle' },
+      { type: 'shape.draw', tool: 'rectangle', count: 1, placement: 'center' },
     ])
   })
 
   it('understands a longer casual compound', () => {
     expect(commandsOf(parseCommand('draw me a rectangle and fill it blue'))).toEqual([
-      { type: 'shape.draw', tool: 'rectangle' },
+      { type: 'shape.draw', tool: 'rectangle', count: 1, placement: 'center' },
       { type: 'color.set', color: '#3b82f6' },
+      { type: 'canvas.fill' },
+    ])
+  })
+
+  it('understands plural tool words', () => {
+    expect(commandsOf(parseCommand('draw three circles'))).toEqual([
+      { type: 'shape.draw', tool: 'ellipse', count: 3, placement: 'row' },
+    ])
+    expect(commandsOf(parseCommand('add lines'))).toEqual([
+      { type: 'shape.draw', tool: 'line', count: 1, placement: 'center' },
+    ])
+  })
+
+  it('places shapes on each side with quantities', () => {
+    expect(commandsOf(parseCommand('add circles on each side three circles'))).toEqual([
+      { type: 'shape.draw', tool: 'ellipse', count: 3, placement: 'sides' },
+    ])
+    expect(commandsOf(parseCommand('put three squares on top'))).toEqual([
+      { type: 'shape.draw', tool: 'rectangle', count: 3, placement: 'top' },
+    ])
+  })
+
+  it('fills inside a drawn shape when asked', () => {
+    expect(commandsOf(parseCommand('make one rectangle put that inside with red color'))).toEqual([
+      { type: 'color.set', color: '#ef4444' },
+      { type: 'shape.draw', tool: 'rectangle', count: 1, placement: 'center' },
       { type: 'canvas.fill' },
     ])
   })

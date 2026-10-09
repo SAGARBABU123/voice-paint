@@ -47,11 +47,24 @@ If **any** clause is unknown, the whole phrase fails with a message and nothing
 is drawn — a partial command is never executed. Contradictory input such as
 "undo and redo" is rejected as ambiguous.
 
-The grammar is **English** with common synonyms and casual phrasing:
+The grammar is **English** with common synonyms, plurals, and casual phrasing:
 
 - "draw a circle and fill it with red color" / "make a circle"
 - "draw me a rectangle and fill it blue" / "put a box down"
 - "bucket it" / "fill it red" · "save my picture" / "export PNG"
+
+**Quantities and simple placement** are supported:
+
+- "draw three circles" → three shapes in a centred row
+- "put three squares on top" / "... on the left / right / bottom"
+- "add circles on each side, three per side" → 3 per side, 12 around the frame
+- "put one in each corner"
+- "make one rectangle put that inside with red color" → rectangle + red inside
+  ("inside"/"within" + a colour) fills the shape
+
+Drawn shapes are **revealed like a hand drawing them** (lines grow, text appears
+letter by letter, fills fade in) rather than popping in instantly. Manual
+mouse/keyboard drawing is unaffected.
 
 Everything maps through the same allowlist; unknown or partially-unrecognized
 phrases fail without touching the canvas.

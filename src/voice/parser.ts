@@ -1,4 +1,5 @@
 import { isShapeTool, type PaintTool } from '../paint/types'
+import type { ShapePlacement } from '../paint/placement'
 import { COLOR_NAMES, TOOL_ALIASES } from './grammar'
 import type { CommandParseResult, ParseFailureReason, PaintCommand } from './types'
 
@@ -6,6 +7,7 @@ const SIZE_WORDS = ['size', 'width'] as const
 const BRUSH_WORDS = ['brush', 'line', 'stroke'] as const
 const DRAW_WORDS = ['draw', 'add', 'create', 'make', 'place', 'put', 'give'] as const
 const FILL_WORDS = ['fill', 'bucket', 'flood'] as const
+const INSIDE_WORDS = ['inside', 'within'] as const
 const UNDO_WORDS = ['undo', 'revert'] as const
 const REDO_WORDS = ['redo', 'restore', 'repeat'] as const
 const CLEAR_WORDS = ['clear', 'wipe', 'empty'] as const
@@ -17,6 +19,23 @@ const WHY_WORDS = ['color', 'colour', 'shade'] as const
 const SMALLER_WORDS = ['smaller', 'thinner', 'decrease', 'shrink'] as const
 const LARGER_WORDS = ['bigger', 'larger', 'thicker', 'increase', 'grow'] as const
 const ACTION_WORDS = ['use', 'switch', 'select', 'choose', 'draw', 'set', 'change', 'make'] as const
+
+const NUMBER_WORDS: Readonly<Record<string, number>> = {
+  a: 1,
+  one: 1,
+  two: 2,
+  couple: 2,
+  three: 3,
+  few: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  dozen: 12,
+}
 
 /** Connectors that join clauses (English). */
 const CONNECTORS: readonly [string, boolean][] = [
@@ -63,9 +82,21 @@ function firstNumber(text: string): number | null {
   return match ? Number(match[0]) : null
 }
 
+/** Simple English pluralisation of a tool token. */
+function pluralOf(word: string): string {
+  if (word.endsWith('y')) return `${word.slice(0, -1)}ies`
+  if (/[sxz]$/.test(word) || /(ch|sh)$/.test(word)) return `${word}es`
+  return `${word}s`
+}
+
+/** Matches a tool alias allowing plurals ("circles" matches "circle"). */
+function tokenMatches(text: string, word: string): boolean {
+  return hasWord(text, word) || hasWord(text, pluralOf(word))
+}
+
 function findTool(text: string): PaintTool | null {
   for (const [word, tool] of Object.entries(TOOL_ALIASES)) {
-    if (hasWord(text, word)) return tool
+    if (tokenMatches(text, word)) return tool
   }
   return null
 }
@@ -75,6 +106,52 @@ function findColor(text: string): string | null {
     if (hasWord(text, word)) return hex
   }
   return null
+}
+
+function isShapeTokenAt(tokens: string[], index: number): boolean {
+  const token = tokens[index]
+  return Object.keys(TOOL_ALIASES).some((alias) => {
+    if (alias !== token && pluralOf(alias) !== token) return false
+    const tool = TOOL_ALIASES[alias]
+    return tool === 'line' || tool === 'rectangle' || tool === 'ellipse'
+  })
+}
+
+/** Number of shapes: the numeral/number-word nearest before a shape token. */
+function extractCount(tokens: string[]): number {
+  const numbers: { index: number; value: number }[] = []
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index]
+    if (/^\d{1,2}$/.test(token)) numbers.push({ index, value: Number(token) })
+    else if (token in NUMBER_WORDS) numbers.push({ index, value: NUMBER_WORDS[token] })
+  }
+  if (numbers.length === 0) return 1
+
+  let best = numbers[0]
+  let bestDistance = Number.POSITIVE_INFINITY
+  for (const number of numbers) {
+    for (let index = number.index + 1; index < tokens.length; index += 1) {
+      if (isShapeTokenAt(tokens, index)) {
+        const distance = index - number.index
+        if (distance < bestDistance) {
+          bestDistance = distance
+          best = number
+        }
+        break
+      }
+    }
+  }
+  return Math.max(1, Math.min(20, best.value || 1))
+}
+
+function placementFrom(text: string, count: number): ShapePlacement {
+  if (hasWord(text, 'corners') || hasWord(text, 'corner')) return 'corners'
+  if (hasWord(text, 'top')) return 'top'
+  if (hasWord(text, 'bottom')) return 'bottom'
+  if (hasWord(text, 'left')) return 'left'
+  if (hasWord(text, 'right')) return 'right'
+  if (hasWord(text, 'sides') || hasWord(text, 'side') || hasWord(text, 'around')) return 'sides'
+  return count > 1 ? 'row' : 'center'
 }
 
 function failure(reason: ParseFailureReason, message: string): CommandParseResult {
@@ -126,6 +203,7 @@ function parseClause(text: string): CommandParseResult {
 
   const tool = findTool(text)
   const color = findColor(text)
+  const tokens = text.split(/\s+/)
 
   if (hasAny(text, SIZE_WORDS) || (hasAny(text, BRUSH_WORDS) && /\d/.test(text))) {
     const size = firstNumber(text)
@@ -143,12 +221,16 @@ function parseClause(text: string): CommandParseResult {
     return ok(commands)
   }
 
-  // Draw a shape: colour, if named, is set before the shape is drawn.
+  // Draw a shape: colour first, then count/placement, then an inside fill.
   if (hasAny(text, DRAW_WORDS)) {
     if (tool && isShapeTool(tool)) {
+      const count = extractCount(tokens)
+      const placement = placementFrom(text, count)
+      const fillInside = hasAny(text, INSIDE_WORDS) && color
       const commands: PaintCommand[] = []
       if (color) commands.push({ type: 'color.set', color })
-      commands.push({ type: 'shape.draw', tool })
+      commands.push({ type: 'shape.draw', tool, count, placement })
+      if (fillInside) commands.push({ type: 'canvas.fill' })
       return ok(commands)
     }
     if (!color) {
@@ -192,7 +274,8 @@ function parseClause(text: string): CommandParseResult {
  * Deterministic phrase -> commands parser. A phrase may contain several clauses
  * ("draw a circle and fill it red"); each clause is parsed independently and
  * the results are concatenated. If any clause fails, the whole phrase fails so
- * a partial command is never executed. Grammar is English with common synonyms.
+ * a partial command is never executed. English, plurals, quantities, and simple
+ * placements ("three circles on each side") are supported.
  */
 export function parseCommand(transcript: string): CommandParseResult {
   const text = normalizeTranscript(transcript)

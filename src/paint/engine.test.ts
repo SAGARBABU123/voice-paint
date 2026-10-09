@@ -140,6 +140,21 @@ describe('PaintEngine', () => {
     }
   })
 
+  it('draws several shapes around the sides', () => {
+    const engine = new PaintEngine()
+
+    engine.drawShapes('ellipse', 2, 'sides')
+
+    expect(engine.getOperations()).toHaveLength(8)
+    expect(engine.getOperations().every((operation) => operation.kind === 'shape')).toBe(true)
+  })
+
+  it('caps the number of shapes', () => {
+    const engine = new PaintEngine()
+    engine.drawShapes('rectangle', 999, 'row')
+    expect(engine.getOperations()).toHaveLength(20)
+  })
+
   it('draws a centred horizontal line', () => {
     const engine = new PaintEngine()
     engine.drawShape('line')
