@@ -3,6 +3,7 @@ import {
   centerOf,
   clamp,
   clampRectToBounds,
+  containsPoint,
   distance,
   fitContain,
   normalizeRect,
@@ -26,6 +27,22 @@ describe('clamp', () => {
 describe('distance', () => {
   it('measures euclidean distance', () => {
     expect(distance({ x: 0, y: 0 }, { x: 3, y: 4 })).toBe(5)
+  })
+})
+
+describe('containsPoint', () => {
+  const rect = { x: 10, y: 20, width: 30, height: 40 }
+
+  it('is true inside the rectangle and on its edges', () => {
+    expect(containsPoint(rect, { x: 10, y: 20 })).toBe(true)
+    expect(containsPoint(rect, { x: 40, y: 60 })).toBe(true)
+    expect(containsPoint(rect, { x: 25, y: 40 })).toBe(true)
+  })
+
+  it('is false outside the rectangle', () => {
+    expect(containsPoint(rect, { x: 9, y: 40 })).toBe(false)
+    expect(containsPoint(rect, { x: 41, y: 40 })).toBe(false)
+    expect(containsPoint(rect, { x: 25, y: 61 })).toBe(false)
   })
 })
 

@@ -46,6 +46,12 @@ export function resolveShortcut(event: ShortcutEvent): PaintCommand | null {
       return { type: 'tool.select', tool: 'rectangle' }
     case 'o':
       return { type: 'tool.select', tool: 'ellipse' }
+    case 't':
+      return { type: 'tool.select', tool: 'text' }
+    case 'f':
+      return { type: 'tool.select', tool: 'fill' }
+    case 'm':
+      return { type: 'tool.select', tool: 'select' }
     case '=':
     case '+':
       return { type: 'brush.size.adjust', direction: 'larger' }
@@ -63,6 +69,9 @@ export const SHORTCUTS: readonly { keys: string; label: string }[] = [
   { keys: 'L', label: 'Line' },
   { keys: 'R', label: 'Rectangle' },
   { keys: 'O', label: 'Ellipse' },
+  { keys: 'T', label: 'Text' },
+  { keys: 'F', label: 'Fill' },
+  { keys: 'M', label: 'Select / move' },
   { keys: '- / +', label: 'Smaller / larger brush' },
   { keys: 'Ctrl/Cmd + Z', label: 'Undo' },
   { keys: 'Ctrl/Cmd + Shift + Z', label: 'Redo' },

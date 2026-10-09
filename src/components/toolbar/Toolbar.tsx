@@ -1,6 +1,12 @@
 import { useRef, type ButtonHTMLAttributes, type ChangeEvent } from 'react'
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
-import { COLOR_PALETTE, MAX_BRUSH_SIZE, MIN_BRUSH_SIZE } from '../../paint/constants'
+import {
+  COLOR_PALETTE,
+  MAX_BRUSH_SIZE,
+  MAX_FONT_SIZE,
+  MIN_BRUSH_SIZE,
+  MIN_FONT_SIZE,
+} from '../../paint/constants'
 import { createImageOperation, readFileAsDataUrl } from '../../paint/image'
 import { loadImage } from '../../paint/imageCache'
 import { PAINT_TOOLS, type PaintTool } from '../../paint/types'
@@ -13,6 +19,9 @@ const TOOL_SHORTCUTS: Record<PaintTool, string> = {
   line: 'L',
   rectangle: 'R',
   ellipse: 'O',
+  text: 'T',
+  fill: 'F',
+  select: 'M',
 }
 
 function buttonClass(active: boolean): string {
@@ -39,6 +48,7 @@ export function Toolbar({ cropMode = false, onToggleCrop }: ToolbarProps = {}) {
   const engine = usePaintEngine()
   const state = usePaintSnapshot()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const isTextTool = state.activeTool === 'text'
 
   const handleClear = () => {
     if (state.operationCount === 0) return
@@ -116,22 +126,30 @@ export function Toolbar({ cropMode = false, onToggleCrop }: ToolbarProps = {}) {
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Brush settings">
+      <div
+        className="flex flex-wrap items-center gap-3"
+        role="group"
+        aria-label={isTextTool ? 'Text settings' : 'Brush settings'}
+      >
         <label htmlFor="brush-size" className="text-xs font-medium text-neutral-500">
-          Brush size
+          {isTextTool ? 'Font size' : 'Brush size'}
         </label>
         <input
           id="brush-size"
           type="range"
-          min={MIN_BRUSH_SIZE}
-          max={MAX_BRUSH_SIZE}
-          value={state.brushSize}
-          title="Brush size ( - / + )"
+          min={isTextTool ? MIN_FONT_SIZE : MIN_BRUSH_SIZE}
+          max={isTextTool ? MAX_FONT_SIZE : MAX_BRUSH_SIZE}
+          value={isTextTool ? state.fontSize : state.brushSize}
+          title={isTextTool ? 'Font size' : 'Brush size ( - / + )'}
           className="w-40"
-          onChange={(event) => engine.setBrushSize(Number(event.target.value))}
+          onChange={(event) => {
+            const value = Number(event.target.value)
+            if (isTextTool) engine.setFontSize(value)
+            else engine.setBrushSize(value)
+          }}
         />
         <span className="w-12 text-sm tabular-nums text-neutral-600 dark:text-neutral-400">
-          {state.brushSize}px
+          {isTextTool ? state.fontSize : state.brushSize}px
         </span>
       </div>
 

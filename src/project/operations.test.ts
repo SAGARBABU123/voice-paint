@@ -27,12 +27,24 @@ const image = {
   height: 10,
   dataUrl: 'data:image/png;base64,AAAA',
 }
+const text = {
+  id: 'd',
+  kind: 'text',
+  x: 5,
+  y: 6,
+  text: 'hello',
+  color: '#111111',
+  fontSize: 24,
+  fontFamily: 'sans-serif',
+  rotation: 0,
+}
 
 describe('isPaintOperation', () => {
-  it('accepts valid strokes, shapes and images', () => {
+  it('accepts valid strokes, shapes, images and text', () => {
     expect(isPaintOperation(stroke)).toBe(true)
     expect(isPaintOperation(shape)).toBe(true)
     expect(isPaintOperation(image)).toBe(true)
+    expect(isPaintOperation(text)).toBe(true)
   })
 
   it.each([
@@ -44,6 +56,10 @@ describe('isPaintOperation', () => {
     ['a non-numeric size', { ...stroke, size: 'big' }],
     ['an image without a size', { ...image, width: 'wide' }],
     ['an image with a non-image data URL', { ...image, dataUrl: 'https://example.com/x.png' }],
+    ['text without characters', { ...text, text: 42 }],
+    ['text without a font family', { ...text, fontFamily: undefined }],
+    ['text with a non-numeric font size', { ...text, fontSize: 'big' }],
+    ['text with a non-numeric rotation', { ...text, rotation: 'quarter' }],
   ])('rejects %s', (_label, value) => {
     expect(isPaintOperation(value)).toBe(false)
   })

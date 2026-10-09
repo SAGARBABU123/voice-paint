@@ -19,6 +19,20 @@ export function renderOperation(
     return
   }
 
+  if (operation.kind === 'text') {
+    ctx.save()
+    ctx.translate(operation.x, operation.y)
+    if (operation.rotation) {
+      ctx.rotate((operation.rotation * Math.PI) / 2)
+    }
+    ctx.fillStyle = operation.color
+    ctx.font = `${operation.fontSize}px ${operation.fontFamily}`
+    ctx.textBaseline = 'top'
+    ctx.fillText(operation.text, 0, 0)
+    ctx.restore()
+    return
+  }
+
   ctx.save()
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'

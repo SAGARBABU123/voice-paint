@@ -19,10 +19,9 @@ Both are locked decisions — do not change them silently.
 | M4 — Release          | Docs, CI, static deploy                       | ✅ Done |
 
 **Post-MVP (P1):** Phase 5 — local project persistence ✅. Phase 6 — image import
-
-- view controls ✅ (open PNG/JPEG, zoom, pan, fit). Phase 7 — document transforms
-  ✅ (rotate, crop, resize; all undoable). Next: text/fill/selection, recent
-  colours, cross-browser E2E.
+· view controls ✅. Phase 7 — document transforms ✅ (rotate, crop, resize; all
+undoable). Phase 8 — text, fill, and selection/move ✅ (all undoable). Next:
+Phase 9 — recent colours, palette polish, cross-browser E2E.
 
 ## Stack (locked)
 
@@ -53,9 +52,9 @@ Vitest + React Testing Library · ESLint + Prettier · no backend.
 
 ## Keyboard shortcuts
 
-`P`/`B` pencil · `E` eraser · `L` line · `R` rectangle · `O` ellipse ·
-`-`/`+` brush size · `Ctrl/Cmd+Z` undo · `Ctrl/Cmd+Shift+Z` redo ·
-`Ctrl/Cmd+S` export PNG · `?` toggle the shortcuts panel.
+`P`/`B` pencil · `E` eraser · `L` line · `R` rectangle · `O` ellipse · `T` text ·
+`F` fill · `M` select/move · `-`/`+` brush size · `Ctrl/Cmd+Z` undo ·
+`Ctrl/Cmd+Shift+Z` redo · `Ctrl/Cmd+S` export PNG · `?` toggle the shortcuts panel.
 
 ## Documentation
 
@@ -77,9 +76,11 @@ The build is a fully static site — no backend, database, or secrets. Run
 
 - Voice depends on the browser Web Speech API and a secure context; it is best
   supported in Chrome/Edge and unavailable in Firefox. Manual drawing always works.
-- **Open image** imports PNG/JPEG scaled to fit; there is no transparency (it
-  composites onto white), and no layers, text, or selection yet (rotate, crop,
-  resize, zoom, and pan are supported).
+- **Open image** imports PNG/JPEG scaled to fit. There is no layer transparency
+  (images, fills, and moved selections composite onto the white background), and
+  no layers. **Text**, **Fill**, and **Select** (move/cut) are supported, along
+  with rotate, crop, resize, zoom, and pan; fill and selection/move bake their
+  result into raster operations.
 - The eraser paints the background colour; **Clear** is confirmed first and can
   be undone.
 - Voice uses a fixed grammar with no natural-language understanding; unknown

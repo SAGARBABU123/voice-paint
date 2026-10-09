@@ -45,5 +45,17 @@ export function isPaintOperation(value: unknown): value is PaintOperation {
     )
   }
 
+  if (value.kind === 'text') {
+    return (
+      typeof value.text === 'string' &&
+      typeof value.color === 'string' &&
+      typeof value.fontFamily === 'string' &&
+      isFiniteNumber(value.x) &&
+      isFiniteNumber(value.y) &&
+      isFiniteNumber(value.fontSize) &&
+      isFiniteNumber(value.rotation)
+    )
+  }
+
   return false
 }

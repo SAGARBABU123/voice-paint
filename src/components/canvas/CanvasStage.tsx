@@ -9,11 +9,17 @@ import {
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
 import { useViewport } from '../../hooks/useViewport'
 import { clientToDocumentPoint } from '../../paint/coordinates'
-import { distance, normalizeRect, type Rect } from '../../paint/geometry'
+import { containsPoint, distance, normalizeRect, type Rect } from '../../paint/geometry'
 import { createId } from '../../paint/id'
 import { getCachedImage, preloadImages } from '../../paint/imageCache'
 import { renderScene } from '../../paint/renderer'
-import { isImageOperation, isStrokeTool, type PaintOperation, type Point } from '../../paint/types'
+import {
+  isImageOperation,
+  isShapeTool,
+  isStrokeTool,
+  type PaintOperation,
+  type Point,
+} from '../../paint/types'
 import { ViewControls } from './ViewControls'
 
 const MIN_POINT_DISTANCE = 1
@@ -41,6 +47,11 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   const draftRef = useRef<PaintOperation | null>(null)
   const drawingRef = useRef(false)
   const cropStartRef = useRef<Point | null>(null)
+  const selectionStartRef = useRef<Point | null>(null)
+  const moveRef = useRef<{ origin: Rect; start: Point } | null>(null)
+  const [textDraft, setTextDraft] = useState<{ x: number; y: number; value: string } | null>(null)
+  const [selection, setSelection] = useState<Rect | null>(null)
+  const [draftTool, setDraftTool] = useState(state.activeTool)
   const [crop, setCrop] = useState<{ active: boolean; rect: Rect | null }>({
     active: false,
     rect: null,
@@ -49,6 +60,14 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   // React's recommended pattern for resetting state when a prop changes.
   if (crop.active !== cropMode) {
     setCrop({ active: cropMode, rect: null })
+    setTextDraft(null)
+    setSelection(null)
+  }
+  // A pending text placement only makes sense while the text tool is active.
+  if (draftTool !== state.activeTool) {
+    setDraftTool(state.activeTool)
+    setTextDraft(null)
+    setSelection(null)
   }
   const cropRect = crop.active ? crop.rect : null
 
@@ -171,11 +190,34 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
       return
     }
 
-    capturePointer(event.pointerId)
-    drawingRef.current = true
-
     const point = toDocumentPoint(event)
     const { activeTool, color, brushSize } = engine.getSnapshot()
+
+    if (activeTool === 'fill') {
+      engine.fillAt(point)
+      return
+    }
+
+    if (activeTool === 'text') {
+      setTextDraft({ x: point.x, y: point.y, value: '' })
+      return
+    }
+
+    if (activeTool === 'select') {
+      capturePointer(event.pointerId)
+      if (selection && containsPoint(selection, point)) {
+        moveRef.current = { origin: selection, start: point }
+      } else {
+        selectionStartRef.current = point
+        setSelection({ x: point.x, y: point.y, width: 0, height: 0 })
+      }
+      return
+    }
+
+    if (!isStrokeTool(activeTool) && !isShapeTool(activeTool)) return
+
+    capturePointer(event.pointerId)
+    drawingRef.current = true
     draftRef.current = isStrokeTool(activeTool)
       ? {
           id: createId(),
@@ -197,11 +239,35 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     paint()
   }
 
+  const commitText = () => {
+    const draft = textDraft
+    if (!draft) return
+    engine.addText(draft.value, { x: draft.x, y: draft.y })
+    setTextDraft(null)
+  }
+
   const handlePointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     if (cropMode) {
       const start = cropStartRef.current
       if (!start) return
       setCrop({ active: true, rect: normalizeRect(start, toDocumentPoint(event)) })
+      return
+    }
+
+    const move = moveRef.current
+    if (move) {
+      const point = toDocumentPoint(event)
+      setSelection({
+        ...move.origin,
+        x: move.origin.x + (point.x - move.start.x),
+        y: move.origin.y + (point.y - move.start.y),
+      })
+      return
+    }
+
+    const selectionStart = selectionStartRef.current
+    if (selectionStart) {
+      setSelection(normalizeRect(selectionStart, toDocumentPoint(event)))
       return
     }
 
@@ -224,6 +290,35 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     if (cropMode) {
       cropStartRef.current = null
       releasePointer(event.pointerId)
+      return
+    }
+
+    const move = moveRef.current
+    if (move) {
+      moveRef.current = null
+      releasePointer(event.pointerId)
+      const point = toDocumentPoint(event)
+      const dx = point.x - move.start.x
+      const dy = point.y - move.start.y
+      if (Math.round(dx) !== 0 || Math.round(dy) !== 0) {
+        engine.moveSelection(move.origin, dx, dy)
+        setSelection({
+          ...move.origin,
+          x: move.origin.x + dx,
+          y: move.origin.y + dy,
+        })
+      } else {
+        setSelection(move.origin)
+      }
+      return
+    }
+
+    if (selectionStartRef.current) {
+      selectionStartRef.current = null
+      releasePointer(event.pointerId)
+      setSelection((current) =>
+        current && current.width >= 1 && current.height >= 1 ? current : null,
+      )
       return
     }
 
@@ -281,6 +376,29 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
             </button>
           </div>
         ) : null}
+        {!cropMode && state.activeTool === 'select' ? (
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Selection">
+            <span className="text-sm text-neutral-500">
+              {selection
+                ? 'Drag inside the selection to move it'
+                : 'Drag on the canvas to select an area'}
+            </span>
+            {selection ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => engine.deleteSelection(selection)}
+                  className={ACTION_CLASS}
+                >
+                  Delete
+                </button>
+                <button type="button" onClick={() => setSelection(null)} className={ACTION_CLASS}>
+                  Deselect
+                </button>
+              </>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div
@@ -315,7 +433,52 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
             />
           ) : null}
 
-          {state.operationCount === 0 && !cropMode ? (
+          {!cropMode && selection && state.activeTool === 'select' ? (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute border-2 border-dashed border-blue-500 bg-blue-500/10"
+              style={{
+                left: selection.x * view.zoom,
+                top: selection.y * view.zoom,
+                width: selection.width * view.zoom,
+                height: selection.height * view.zoom,
+              }}
+            />
+          ) : null}
+
+          {textDraft ? (
+            <div
+              className="absolute z-10 flex items-center gap-1 rounded-md border border-blue-500 bg-white p-1 shadow-lg dark:bg-neutral-900"
+              style={{ left: textDraft.x * view.zoom, top: textDraft.y * view.zoom }}
+            >
+              <input
+                autoFocus
+                type="text"
+                aria-label="Text to add"
+                placeholder="Type and press Enter"
+                value={textDraft.value}
+                onChange={(event) => setTextDraft({ ...textDraft, value: event.target.value })}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    commitText()
+                  } else if (event.key === 'Escape') {
+                    event.preventDefault()
+                    setTextDraft(null)
+                  }
+                }}
+                className="w-40 rounded border border-neutral-300 px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+              />
+              <button type="button" onClick={commitText} className={ACTION_CLASS}>
+                Place text
+              </button>
+              <button type="button" onClick={() => setTextDraft(null)} className={ACTION_CLASS}>
+                Cancel
+              </button>
+            </div>
+          ) : null}
+
+          {state.operationCount === 0 && !cropMode && state.activeTool !== 'select' ? (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <p className="rounded bg-white/70 px-3 py-1 text-sm text-neutral-500 dark:bg-neutral-900/70 dark:text-neutral-400">
                 Draw here with the mouse, or use the voice button below

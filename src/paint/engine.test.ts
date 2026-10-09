@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
-import { DEFAULT_BRUSH_SIZE, DEFAULT_COLOR, MAX_BRUSH_SIZE, MIN_BRUSH_SIZE } from './constants'
+import {
+  DEFAULT_BRUSH_SIZE,
+  DEFAULT_COLOR,
+  DEFAULT_FONT_SIZE,
+  MAX_BRUSH_SIZE,
+  MAX_FONT_SIZE,
+  MIN_BRUSH_SIZE,
+  MIN_FONT_SIZE,
+} from './constants'
 import { PaintEngine } from './engine'
 import type { PaintTool, StrokeOperation } from './types'
 
@@ -24,6 +32,7 @@ describe('PaintEngine', () => {
     expect(snapshot.activeTool).toBe('pencil')
     expect(snapshot.color).toBe(DEFAULT_COLOR)
     expect(snapshot.brushSize).toBe(DEFAULT_BRUSH_SIZE)
+    expect(snapshot.fontSize).toBe(DEFAULT_FONT_SIZE)
     expect(snapshot.canUndo).toBe(false)
     expect(snapshot.canRedo).toBe(false)
     expect(snapshot.operationCount).toBe(0)
@@ -63,6 +72,71 @@ describe('PaintEngine', () => {
 
     engine.setBrushSize(7.6)
     expect(engine.getSnapshot().brushSize).toBe(8)
+  })
+
+  it('validates and clamps the font size', () => {
+    const engine = new PaintEngine()
+    expect(engine.getSnapshot().fontSize).toBe(DEFAULT_FONT_SIZE)
+
+    engine.setFontSize(1)
+    expect(engine.getSnapshot().fontSize).toBe(MIN_FONT_SIZE)
+
+    engine.setFontSize(9999)
+    expect(engine.getSnapshot().fontSize).toBe(MAX_FONT_SIZE)
+
+    engine.setFontSize(40.4)
+    expect(engine.getSnapshot().fontSize).toBe(40)
+  })
+
+  it('adds text using the active colour and font size, undoably', () => {
+    const engine = new PaintEngine()
+    engine.setColor('#3b82f6')
+    engine.setFontSize(40)
+
+    expect(engine.addText('  Hello  ', { x: 12, y: 34 })).toBe(true)
+
+    const operation = engine.getOperations()[0]
+    expect(operation?.kind).toBe('text')
+    if (operation?.kind === 'text') {
+      expect(operation).toMatchObject({
+        text: 'Hello',
+        x: 12,
+        y: 34,
+        color: '#3b82f6',
+        fontSize: 40,
+      })
+    }
+
+    expect(engine.undo()).toBe(true)
+    expect(engine.getSnapshot().operationCount).toBe(0)
+  })
+
+  it('ignores blank text', () => {
+    const engine = new PaintEngine()
+    expect(engine.addText('   ', { x: 0, y: 0 })).toBe(false)
+    expect(engine.getSnapshot().operationCount).toBe(0)
+  })
+
+  it('does not change the document when a fill cannot be rasterised', () => {
+    const engine = new PaintEngine()
+    // jsdom provides no Canvas 2D context, so the fill pipeline is a safe no-op.
+    expect(engine.fillAt({ x: 10, y: 10 })).toBe(false)
+    expect(engine.getSnapshot().operationCount).toBe(0)
+  })
+
+  it('refuses a selection move with no offset or a bad offset', () => {
+    const engine = new PaintEngine()
+    const rect = { x: 0, y: 0, width: 10, height: 10 }
+    expect(engine.moveSelection(rect, 0, 0)).toBe(false)
+    expect(engine.moveSelection(rect, Number.NaN, 1)).toBe(false)
+  })
+
+  it('does not change the document when a selection cannot be rasterised', () => {
+    const engine = new PaintEngine()
+    const rect = { x: 0, y: 0, width: 10, height: 10 }
+    expect(engine.deleteSelection(rect)).toBe(false)
+    expect(engine.moveSelection(rect, 5, 5)).toBe(false)
+    expect(engine.getSnapshot().operationCount).toBe(0)
   })
 
   it('tracks operations through undo and redo', () => {

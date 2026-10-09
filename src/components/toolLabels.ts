@@ -6,4 +6,7 @@ export const TOOL_LABELS: Record<PaintTool, string> = {
   line: 'Line',
   rectangle: 'Rectangle',
   ellipse: 'Ellipse',
+  text: 'Text',
+  fill: 'Fill',
+  select: 'Select',
 }

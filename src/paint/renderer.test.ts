@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BACKGROUND_COLOR } from './constants'
 import { renderOperation, renderScene } from './renderer'
-import type { ImageOperation, ShapeOperation, StrokeOperation } from './types'
+import type { ImageOperation, ShapeOperation, StrokeOperation, TextOperation } from './types'
 
 type Call = { method: string; args: unknown[] }
 
@@ -33,6 +33,11 @@ function createFakeContext() {
     ellipse: record('ellipse'),
     strokeRect: record('strokeRect'),
     drawImage: record('drawImage'),
+    translate: record('translate'),
+    rotate: record('rotate'),
+    fillText: record('fillText'),
+    font: '',
+    textBaseline: '',
   }
 
   return context as unknown as CanvasRenderingContext2D & { calls: Call[]; strokeStyle: string }
@@ -62,6 +67,18 @@ const IMAGE_OPERATION: ImageOperation = {
   width: 30,
   height: 40,
   dataUrl: 'data:image/png;base64,AAAA',
+}
+
+const TEXT_OPERATION: TextOperation = {
+  id: 'txt',
+  kind: 'text',
+  x: 12,
+  y: 34,
+  text: 'hello',
+  color: '#ff00ff',
+  fontSize: 24,
+  fontFamily: 'sans-serif',
+  rotation: 0,
 }
 
 function methods(ctx: { calls: Call[] }): string[] {
@@ -124,6 +141,24 @@ describe('renderOperation — strokes and shapes', () => {
     expect(ctx.calls.find((call) => call.method === 'ellipse')?.args.slice(0, 5)).toEqual([
       10, 20, 10, 20, 0,
     ])
+  })
+})
+
+describe('renderOperation — text', () => {
+  it('draws text at its anchor without rotation', () => {
+    const ctx = createFakeContext()
+    renderOperation(ctx, TEXT_OPERATION)
+    expect(ctx.calls.find((call) => call.method === 'translate')?.args).toEqual([12, 34])
+    expect(methods(ctx)).not.toContain('rotate')
+    expect(ctx.calls.find((call) => call.method === 'fillText')?.args).toEqual(['hello', 0, 0])
+    expect(ctx.font).toBe('24px sans-serif')
+    expect(ctx.fillStyle).toBe('#ff00ff')
+  })
+
+  it('rotates text by whole quarter-turns', () => {
+    const ctx = createFakeContext()
+    renderOperation(ctx, { ...TEXT_OPERATION, rotation: 1 })
+    expect(ctx.calls.find((call) => call.method === 'rotate')?.args).toEqual([Math.PI / 2])
   })
 })
 

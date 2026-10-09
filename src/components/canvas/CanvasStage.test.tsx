@@ -89,6 +89,120 @@ describe('CanvasStage', () => {
     expect(engine.getOperations()).toHaveLength(0)
   })
 
+  it('opens a text field and commits a text operation', () => {
+    const { engine, canvas } = renderStage()
+    act(() => {
+      engine.setTool('text')
+    })
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      button: 0,
+      pointerType: 'mouse',
+      clientX: 100,
+      clientY: 120,
+    })
+
+    const input = screen.getByLabelText('Text to add')
+    fireEvent.change(input, { target: { value: 'Hello' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Place text' }))
+
+    const operation = engine.getOperations()[0]
+    expect(operation?.kind).toBe('text')
+    if (operation?.kind === 'text') {
+      expect(operation).toMatchObject({ text: 'Hello', x: 100, y: 120 })
+    }
+  })
+
+  it('commits text on Enter and cancels on Escape', () => {
+    const { engine, canvas } = renderStage()
+    act(() => {
+      engine.setTool('text')
+    })
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      button: 0,
+      pointerType: 'mouse',
+      clientX: 10,
+      clientY: 10,
+    })
+    fireEvent.change(screen.getByLabelText('Text to add'), { target: { value: 'Hi' } })
+    fireEvent.keyDown(screen.getByLabelText('Text to add'), { key: 'Enter' })
+    expect(engine.getOperations()).toHaveLength(1)
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 2,
+      button: 0,
+      pointerType: 'mouse',
+      clientX: 20,
+      clientY: 20,
+    })
+    fireEvent.keyDown(screen.getByLabelText('Text to add'), { key: 'Escape' })
+
+    expect(screen.queryByLabelText('Text to add')).toBeNull()
+    expect(engine.getOperations()).toHaveLength(1)
+  })
+
+  it('does not create a drawing operation for the fill tool', () => {
+    const { engine, canvas } = renderStage()
+    act(() => {
+      engine.setTool('fill')
+    })
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      button: 0,
+      pointerType: 'mouse',
+      clientX: 40,
+      clientY: 40,
+    })
+    fireEvent.pointerMove(canvas, { pointerId: 1, clientX: 80, clientY: 80 })
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 80, clientY: 80 })
+
+    // jsdom has no Canvas 2D context, so no fill operation is baked.
+    expect(engine.getOperations()).toHaveLength(0)
+  })
+
+  it('creates a selection marquee and clears it on deselect', () => {
+    const { engine, canvas } = renderStage()
+    act(() => {
+      engine.setTool('select')
+    })
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      button: 0,
+      pointerType: 'mouse',
+      clientX: 10,
+      clientY: 10,
+    })
+    fireEvent.pointerMove(canvas, { pointerId: 1, clientX: 110, clientY: 80 })
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 110, clientY: 80 })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Deselect' }))
+
+    expect(screen.queryByRole('button', { name: 'Deselect' })).toBeNull()
+  })
+
+  it('ignores a click that does not drag out a selection', () => {
+    const { engine, canvas } = renderStage()
+    act(() => {
+      engine.setTool('select')
+    })
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      button: 0,
+      pointerType: 'mouse',
+      clientX: 10,
+      clientY: 10,
+    })
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 10, clientY: 10 })
+
+    expect(screen.queryByRole('button', { name: 'Deselect' })).toBeNull()
+  })
+
   it('crops the document from a drag in crop mode', () => {
     const engine = new PaintEngine()
     const onCropComplete = vi.fn()

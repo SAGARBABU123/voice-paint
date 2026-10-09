@@ -10,6 +10,16 @@ export function distance(a: Point, b: Point): number {
 
 export type Rect = { x: number; y: number; width: number; height: number }
 
+/** True when a point falls inside a rectangle (inclusive of its edges). */
+export function containsPoint(rect: Rect, point: Point): boolean {
+  return (
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.width &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.height
+  )
+}
+
 /** Bounding rectangle between two points, regardless of drag direction. */
 export function normalizeRect(start: Point, end: Point): Rect {
   return {

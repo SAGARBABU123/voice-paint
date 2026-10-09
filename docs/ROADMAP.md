@@ -43,5 +43,6 @@ limitations, passing quality gates.
 - **Phase 6 — Image import & view controls ✅** — open PNG/JPEG (scaled to fit),
   zoom, pan, fit, actual size.
 - **Phase 7 — Document transforms ✅** — rotate, crop, and resize (all undoable).
-- **Phase 8 — Text, fill, selection/move.**
+- **Phase 8 — Text, fill, selection/move ✅** — text placement with font size,
+  flood fill, and rectangular marquee move/cut (all undoable).
 - **Phase 9 — Recent colours, palette polish, cross-browser E2E.**

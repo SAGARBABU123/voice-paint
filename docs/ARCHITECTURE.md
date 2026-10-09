@@ -46,7 +46,8 @@ src/
 │   ├── editor/              Layout shell, status bar
 │   ├── toolbar/             Tool & option controls
 │   └── voice/               Mic control, transcript, help
-├── paint/                   (M1) engine, renderer, tools, history, export
+├── paint/                   engine, renderer, tools, history, export,
+│                            transforms, text, fill, selection
 ├── voice/                   (M2) adapters, parser, types
 ├── hooks/
 ├── types/

@@ -123,4 +123,22 @@ describe('Toolbar', () => {
 
     expect(exportSpy).toHaveBeenCalledTimes(1)
   })
+
+  it('exposes the text, fill and select tools', () => {
+    renderToolbar()
+    expect(screen.getByRole('button', { name: 'Text' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Fill' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Select' })).toBeTruthy()
+  })
+
+  it('switches the size control to font size for the text tool', () => {
+    const engine = renderToolbar()
+    act(() => {
+      engine.setTool('text')
+    })
+
+    fireEvent.change(screen.getByLabelText('Font size'), { target: { value: '48' } })
+
+    expect(engine.getSnapshot().fontSize).toBe(48)
+  })
 })

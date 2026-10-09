@@ -37,8 +37,9 @@ Notes:
 - **Fixed command grammar** — there is no natural-language understanding and no
   LLM in the command path; unknown phrasing returns a helpful message without
   changing the canvas.
-- **No layers, filters, text, selection, or cloud storage** — deferred by scope;
-  rotate, crop, resize, zoom, and pan are supported.
+- **No layers, filters, or cloud storage** — deferred by scope. Text, fill, and
+  rectangular selection/move are supported (P1); fill and move bake their result
+  into raster image operations. Rotate, crop, resize, zoom, and pan are supported.
 - **No backend, accounts, or analytics** — the app is a static site and stores
   nothing server-side. Drawings are kept in the browser's IndexedDB by default;
   clearing site data or using private browsing removes them.

@@ -79,6 +79,14 @@ export function scaleOperations(
         end: { x: operation.end.x * scaleX, y: operation.end.y * scaleY },
       }
     }
+    if (operation.kind === 'text') {
+      return {
+        ...operation,
+        x: operation.x * scaleX,
+        y: operation.y * scaleY,
+        fontSize: operation.fontSize * sizeScale,
+      }
+    }
     return {
       ...operation,
       x: operation.x * scaleX,
@@ -111,6 +119,13 @@ export function rotateOperations(
         ...operation,
         start: rotatePoint(operation.start, turns, width, height),
         end: rotatePoint(operation.end, turns, width, height),
+      }
+    }
+    if (operation.kind === 'text') {
+      return {
+        ...operation,
+        ...rotatePoint({ x: operation.x, y: operation.y }, turns, width, height),
+        rotation: normalizeQuarterTurns(operation.rotation + turns),
       }
     }
     const first = rotatePoint({ x: operation.x, y: operation.y }, turns, width, height)

@@ -2,14 +2,20 @@ import {
   BACKGROUND_COLOR,
   DEFAULT_BRUSH_SIZE,
   DEFAULT_COLOR,
+  DEFAULT_FONT_SIZE,
   DOCUMENT_HEIGHT,
   DOCUMENT_WIDTH,
   MAX_BRUSH_SIZE,
+  MAX_FONT_SIZE,
   MIN_BRUSH_SIZE,
+  MIN_FONT_SIZE,
 } from './constants'
 import { exportCanvasAsPng } from './export'
+import { createFillOperation } from './fill'
 import { clamp, clampRectToBounds, type Rect } from './geometry'
 import { History } from './history'
+import { createTextOperation } from './text'
+import { createSelectionMask, createSelectionMove } from './selection'
 import {
   normalizeQuarterTurns,
   rotateOperations,
@@ -17,7 +23,7 @@ import {
   scaleOperations,
   translateOperations,
 } from './transforms'
-import { isPaintTool, type PaintOperation, type PaintTool } from './types'
+import { isPaintTool, type PaintOperation, type PaintTool, type Point } from './types'
 
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/
 
@@ -32,6 +38,7 @@ export type PaintSnapshot = {
   activeTool: PaintTool
   color: string
   brushSize: number
+  fontSize: number
   canUndo: boolean
   canRedo: boolean
   operationCount: number
@@ -46,6 +53,7 @@ export type PaintEngineOptions = {
   height?: number
   color?: string
   brushSize?: number
+  fontSize?: number
   background?: string
 }
 
@@ -66,6 +74,7 @@ export class PaintEngine {
   private activeTool: PaintTool = 'pencil'
   private color: string
   private brushSize: number
+  private fontSize: number
   private readonly history = new History<DocumentState>()
   private readonly listeners = new Set<() => void>()
   private canvas: HTMLCanvasElement | null = null
@@ -81,6 +90,7 @@ export class PaintEngine {
     }
     this.color = normalizeColor(options.color) ?? DEFAULT_COLOR
     this.brushSize = clampBrushSize(options.brushSize ?? DEFAULT_BRUSH_SIZE)
+    this.fontSize = clampFontSize(options.fontSize ?? DEFAULT_FONT_SIZE)
     this.snapshot = this.buildSnapshot()
   }
 
@@ -127,6 +137,83 @@ export class PaintEngine {
     if (next === this.brushSize) return
     this.brushSize = next
     this.emit()
+  }
+
+  setFontSize(size: number): void {
+    const next = clampFontSize(size)
+    if (next === this.fontSize) return
+    this.fontSize = next
+    this.emit()
+  }
+
+  /** Places text at a document point, using the active colour and font size. */
+  addText(text: string, point: Point): boolean {
+    const trimmed = text.trim()
+    if (!trimmed) return false
+    this.commit(
+      createTextOperation({
+        text: trimmed,
+        x: point.x,
+        y: point.y,
+        color: this.color,
+        fontSize: this.fontSize,
+      }),
+    )
+    return true
+  }
+
+  /** Flood-fills from a document point, baked into one undoable image operation. */
+  fillAt(point: Point): boolean {
+    const current = this.current
+    const operation = createFillOperation(
+      current.operations,
+      current.width,
+      current.height,
+      point,
+      this.color,
+    )
+    if (!operation) return false
+    this.commit(operation)
+    return true
+  }
+
+  /** Cuts a rectangular region to the background, undoably. */
+  deleteSelection(rect: Rect): boolean {
+    const current = this.current
+    const mask = createSelectionMask(current.width, current.height, this.background, rect)
+    if (!mask) return false
+    this.pushDocument({
+      width: current.width,
+      height: current.height,
+      operations: [...current.operations, mask],
+    })
+    return true
+  }
+
+  /** Moves a rectangular region by a delta as a single undoable step. */
+  moveSelection(rect: Rect, dx: number, dy: number): boolean {
+    if (!Number.isFinite(dx) || !Number.isFinite(dy)) return false
+    const offsetX = Math.round(dx)
+    const offsetY = Math.round(dy)
+    if (offsetX === 0 && offsetY === 0) return false
+
+    const current = this.current
+    const move = createSelectionMove(
+      current.operations,
+      current.width,
+      current.height,
+      this.background,
+      rect,
+      offsetX,
+      offsetY,
+    )
+    if (!move) return false
+    this.pushDocument({
+      width: current.width,
+      height: current.height,
+      operations: [...current.operations, move.mask, move.patch],
+    })
+    return true
   }
 
   commit(operation: PaintOperation): void {
@@ -238,6 +325,7 @@ export class PaintEngine {
       activeTool: this.activeTool,
       color: this.color,
       brushSize: this.brushSize,
+      fontSize: this.fontSize,
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
       operationCount: current.operations.length,
@@ -258,4 +346,9 @@ function normalizeColor(value: string | undefined): string | null {
 function clampBrushSize(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_BRUSH_SIZE
   return clamp(Math.round(value), MIN_BRUSH_SIZE, MAX_BRUSH_SIZE)
+}
+
+function clampFontSize(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_FONT_SIZE
+  return clamp(Math.round(value), MIN_FONT_SIZE, MAX_FONT_SIZE)
 }

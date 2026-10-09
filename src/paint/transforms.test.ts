@@ -7,7 +7,7 @@ import {
   scaleOperations,
   translateOperations,
 } from './transforms'
-import type { ImageOperation, ShapeOperation, StrokeOperation } from './types'
+import type { ImageOperation, ShapeOperation, StrokeOperation, TextOperation } from './types'
 
 const stroke: StrokeOperation = {
   id: 's',
@@ -37,6 +37,17 @@ const image: ImageOperation = {
   width: 30,
   height: 40,
   dataUrl: 'data:image/png;base64,AAAA',
+}
+const text: TextOperation = {
+  id: 't',
+  kind: 'text',
+  x: 10,
+  y: 20,
+  text: 'Hi',
+  color: '#111111',
+  fontSize: 24,
+  fontFamily: 'sans-serif',
+  rotation: 0,
 }
 
 describe('normalizeQuarterTurns', () => {
@@ -68,6 +79,13 @@ describe('translateOperations', () => {
       expect(movedImage.y).toBe(15)
     }
   })
+
+  it('moves text anchors', () => {
+    const [movedText] = translateOperations([text], 5, -5)
+    if (movedText?.kind === 'text') {
+      expect(movedText).toMatchObject({ x: 15, y: 15 })
+    }
+  })
 })
 
 describe('scaleOperations', () => {
@@ -89,6 +107,13 @@ describe('scaleOperations', () => {
       expect(scaledImage).toMatchObject({ x: 5, y: 10, width: 15, height: 20 })
     }
   })
+
+  it('scales text position and font size', () => {
+    const [scaledText] = scaleOperations([text], 0.5, 0.5)
+    if (scaledText?.kind === 'text') {
+      expect(scaledText).toMatchObject({ x: 5, y: 10, fontSize: 12 })
+    }
+  })
 })
 
 describe('rotateOperations', () => {
@@ -104,6 +129,13 @@ describe('rotateOperations', () => {
     const [rotated] = rotateOperations([image], 1, 960, 720)
     if (rotated?.kind === 'image') {
       expect(rotated).toMatchObject({ x: 660, y: 10, width: 40, height: 30 })
+    }
+  })
+
+  it('rotates text anchors and adds to their rotation', () => {
+    const [rotated] = rotateOperations([text], 1, 960, 720)
+    if (rotated?.kind === 'text') {
+      expect(rotated).toMatchObject({ x: 700, y: 10, rotation: 1 })
     }
   })
 

@@ -1,4 +1,13 @@
-export const PAINT_TOOLS = ['pencil', 'eraser', 'line', 'rectangle', 'ellipse'] as const
+export const PAINT_TOOLS = [
+  'pencil',
+  'eraser',
+  'line',
+  'rectangle',
+  'ellipse',
+  'text',
+  'fill',
+  'select',
+] as const
 
 export type PaintTool = (typeof PAINT_TOOLS)[number]
 export type StrokeTool = Extract<PaintTool, 'pencil' | 'eraser'>
@@ -10,6 +19,10 @@ export function isPaintTool(value: unknown): value is PaintTool {
 
 export function isStrokeTool(tool: PaintTool): tool is StrokeTool {
   return tool === 'pencil' || tool === 'eraser'
+}
+
+export function isShapeTool(tool: PaintTool): tool is ShapeTool {
+  return tool === 'line' || tool === 'rectangle' || tool === 'ellipse'
 }
 
 export type Point = { x: number; y: number }
@@ -44,8 +57,25 @@ export type ImageOperation = {
   dataUrl: string
 }
 
-export type PaintOperation = StrokeOperation | ShapeOperation | ImageOperation
+export type PaintOperation = StrokeOperation | ShapeOperation | ImageOperation | TextOperation
 
 export function isImageOperation(operation: PaintOperation): operation is ImageOperation {
   return operation.kind === 'image'
+}
+
+/** Text drawn at a document point. `rotation` is in quarter-turns. */
+export type TextOperation = {
+  id: string
+  kind: 'text'
+  x: number
+  y: number
+  text: string
+  color: string
+  fontSize: number
+  fontFamily: string
+  rotation: number
+}
+
+export function isTextOperation(operation: PaintOperation): operation is TextOperation {
+  return operation.kind === 'text'
 }

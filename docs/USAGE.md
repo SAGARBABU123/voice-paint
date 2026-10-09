@@ -18,13 +18,16 @@ on the canvas with a mouse, finger, or stylus.
 IndexedDB and restored when you reopen the app in the same browser. The status
 bar shows `Saving…` / `Saved`. Nothing is sent to a server.
 
-| Tool      | What it does                                     |
-| --------- | ------------------------------------------------ |
-| Pencil    | Freehand stroke in the active colour             |
-| Eraser    | Freehand stroke painted in the background colour |
-| Line      | Straight line from press to release              |
-| Rectangle | Rectangle spanning the drag                      |
-| Ellipse   | Ellipse spanning the drag                        |
+| Tool      | What it does                                       |
+| --------- | -------------------------------------------------- |
+| Pencil    | Freehand stroke in the active colour               |
+| Eraser    | Freehand stroke painted in the background colour   |
+| Line      | Straight line from press to release                |
+| Rectangle | Rectangle spanning the drag                        |
+| Ellipse   | Ellipse spanning the drag                          |
+| Text      | Places text at the clicked point (type, `Enter`)   |
+| Fill      | Flood-fills a contiguous area in the active colour |
+| Select    | Marquee-selects a region; drag inside to move it   |
 
 - **Colour** — pick a palette swatch or use the custom colour input.
 - **Brush size** — drag the slider (1–64 px).
@@ -46,6 +49,20 @@ background.
 - **Crop**: choose **Crop**, drag an area on the canvas, then **Apply crop**.
 
 Every transform is recorded in history, so undo/redo works across them.
+
+## Text, fill, and selection
+
+- **Text** — choose **Text**, click where the text should start, type in the
+  field, then press `Enter` (or **Place text**). The **Font size** slider sets
+  the size and the active colour is used. Press `Escape` to cancel.
+- **Fill** — choose **Fill** and click a region to flood-fill it with the active
+  colour. Clicking the untouched canvas paints the whole background.
+- **Select** — choose **Select** and drag a rectangle. Drag inside the selection
+  to move that region, use **Delete** to cut it to the background, or
+  **Deselect** to clear the marquee. A move is recorded as a single undo step.
+
+Text, fill, and selection are manual-only tools in this release; voice covers the
+P0 commands listed in [`VOICE_COMMANDS.md`](./VOICE_COMMANDS.md).
 
 ## Zoom and pan
 
@@ -77,6 +94,9 @@ microphone control is disabled and every manual tool keeps working.
 | `L`                    | Line                       |
 | `R`                    | Rectangle                  |
 | `O`                    | Ellipse                    |
+| `T`                    | Text                       |
+| `F`                    | Fill                       |
+| `M`                    | Select / move              |
 | `-` / `+`              | Smaller / larger brush     |
 | `Ctrl/Cmd + Z`         | Undo                       |
 | `Ctrl/Cmd + Shift + Z` | Redo                       |

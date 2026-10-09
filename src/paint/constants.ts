@@ -12,6 +12,11 @@ export const DEFAULT_BRUSH_SIZE = 4
 export const MIN_BRUSH_SIZE = 1
 export const MAX_BRUSH_SIZE = 64
 
+/** Default and documented, validated text size limits (pixels). */
+export const DEFAULT_FONT_SIZE = 24
+export const MIN_FONT_SIZE = 8
+export const MAX_FONT_SIZE = 200
+
 export const COLOR_PALETTE = [
   '#111111',
   '#ffffff',

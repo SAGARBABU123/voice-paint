@@ -13,6 +13,9 @@ describe('resolveShortcut', () => {
     ['l', 'line'],
     ['r', 'rectangle'],
     ['o', 'ellipse'],
+    ['t', 'text'],
+    ['f', 'fill'],
+    ['m', 'select'],
   ])('maps %s to the %s tool', (pressed, tool) => {
     expect(resolveShortcut(key(pressed))).toEqual({ type: 'tool.select', tool })
   })
