@@ -44,7 +44,7 @@ describe('VoicePanel', () => {
     expect(adapter.stop).toHaveBeenCalledTimes(1)
   })
 
-  it('runs a voice command through the shared engine and reports it', async () => {
+  it('waits for review, then applies the command on Enter', async () => {
     const user = userEvent.setup()
     const { engine, emitResult } = renderPanel()
 
@@ -52,6 +52,14 @@ describe('VoicePanel', () => {
     await act(async () => {
       emitResult('set color to red')
     })
+
+    // Nothing applied until confirmed.
+    expect(engine.getSnapshot().color).toBe('#111111')
+    expect(screen.getByRole('group', { name: /pending voice command/i })).toHaveTextContent(
+      /colour set to/i,
+    )
+
+    await user.click(screen.getByRole('button', { name: /apply \(enter\)/i }))
 
     expect(engine.getSnapshot().color).toBe('#ef4444')
     expect(screen.getByRole('status')).toHaveTextContent(/colour set to/i)
@@ -68,6 +76,10 @@ describe('VoicePanel', () => {
     await act(async () => {
       emitResult('clear canvas')
     })
+
+    // Draft first, then apply, then confirm.
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /apply \(enter\)/i }))
 
     expect(screen.getByRole('alertdialog')).toBeInTheDocument()
     expect(engine.getSnapshot().operationCount).toBe(1)

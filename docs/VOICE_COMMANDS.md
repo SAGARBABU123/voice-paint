@@ -6,12 +6,17 @@
 
 1. User activates the microphone control (explicit activation; no always-on).
 2. A visible listening indicator appears.
-3. Speech recognition returns text.
+3. Speech recognition returns text (Whisper engine by default).
 4. Parser normalizes text and matches it to the command grammar.
 5. Validator checks the operation and parameters.
-6. App previews/confirms when needed (destructive actions).
-7. Dispatcher invokes the **same** core action as manual controls.
-8. UI reports success, clarification, unsupported intent, or failure.
+6. **The understood command is shown in the transcript panel as a draft.**
+   Nothing is applied yet.
+7. User reviews the draft and presses **Enter** (or **Apply**) to run it.
+8. Dispatcher invokes the **same** core action as manual controls.
+9. UI reports success, clarification, unsupported intent, or failure.
+
+This **review-then-apply** loop means a misheard command can never change the
+painting without the user seeing it first (industry-standard safe pattern).
 
 ## Command catalogue
 

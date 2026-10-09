@@ -47,7 +47,7 @@ describe('useVoiceCommands', () => {
     expect(view.result.current.isListening).toBe(true)
   })
 
-  it('executes a final command through the shared engine', async () => {
+  it('parses a command into a draft, then applies it on runDraft', async () => {
     const { engine, view, emitResult } = setup()
     act(() => view.result.current.start())
 
@@ -55,11 +55,20 @@ describe('useVoiceCommands', () => {
       emitResult('switch to eraser')
     })
 
+    // Review first — nothing is applied until the user confirms.
+    expect(engine.getSnapshot().activeTool).toBe('pencil')
+    expect(view.result.current.draft?.description).toMatch(/eraser/i)
+
+    await act(async () => {
+      await view.result.current.runDraft()
+    })
+
     expect(engine.getSnapshot().activeTool).toBe('eraser')
     expect(view.result.current.message).toMatch(/eraser/i)
+    expect(view.result.current.draft).toBeNull()
   })
 
-  it('shows interim results but never executes them', async () => {
+  it('shows interim results but never drafts them', async () => {
     const { engine, view, emitResult } = setup()
     act(() => view.result.current.start())
 
@@ -68,6 +77,7 @@ describe('useVoiceCommands', () => {
     })
 
     expect(view.result.current.transcript).toBe('use rectangle')
+    expect(view.result.current.draft).toBeNull()
     expect(engine.getSnapshot().activeTool).toBe('pencil')
   })
 
@@ -80,6 +90,7 @@ describe('useVoiceCommands', () => {
     })
 
     expect(engine.getSnapshot().activeTool).toBe('pencil')
+    expect(view.result.current.draft).toBeNull()
     expect(view.result.current.message).toMatch(/not sure/i)
   })
 
@@ -93,9 +104,10 @@ describe('useVoiceCommands', () => {
     })
 
     expect(engine.getSnapshot()).toBe(before)
+    expect(view.result.current.draft).toBeNull()
   })
 
-  it('requires confirmation before clearing', async () => {
+  it('requires confirmation after applying a clear draft', async () => {
     const { engine, view, emitResult } = setup()
     act(() => {
       engine.commit(stroke())
@@ -105,6 +117,13 @@ describe('useVoiceCommands', () => {
 
     await act(async () => {
       emitResult('clear canvas')
+    })
+
+    expect(view.result.current.draft?.commands[0]?.type).toBe('canvas.clear')
+    expect(engine.getSnapshot().operationCount).toBe(1)
+
+    await act(async () => {
+      await view.result.current.runDraft()
     })
 
     expect(view.result.current.pendingConfirm?.type).toBe('canvas.clear')
@@ -128,13 +147,33 @@ describe('useVoiceCommands', () => {
     await act(async () => {
       emitResult('clear canvas')
     })
+    await act(async () => {
+      await view.result.current.runDraft()
+    })
     act(() => view.result.current.cancelPending())
 
     expect(engine.getSnapshot().operationCount).toBe(1)
     expect(view.result.current.pendingConfirm).toBeNull()
   })
 
-  it('undoes and redoes through voice', async () => {
+  it('dismisses a draft without painting', async () => {
+    const { engine, view, emitResult } = setup()
+    act(() => view.result.current.start())
+
+    await act(async () => {
+      emitResult('set color to red')
+    })
+
+    expect(view.result.current.draft).not.toBeNull()
+
+    act(() => view.result.current.dismissDraft())
+
+    expect(view.result.current.draft).toBeNull()
+    expect(engine.getSnapshot().color).toBe('#111111')
+    expect(view.result.current.message).toMatch(/cancelled/i)
+  })
+
+  it('undoes and redoes through voice after review', async () => {
     const { engine, view, emitResult } = setup()
     act(() => {
       engine.commit(stroke('a'))
@@ -145,32 +184,33 @@ describe('useVoiceCommands', () => {
     await act(async () => {
       emitResult('undo')
     })
+    await act(async () => {
+      await view.result.current.runDraft()
+    })
     expect(engine.getSnapshot().operationCount).toBe(1)
 
     await act(async () => {
       emitResult('redo')
     })
+    await act(async () => {
+      await view.result.current.runDraft()
+    })
     expect(engine.getSnapshot().operationCount).toBe(2)
   })
 
-  it('surfaces permission denial', () => {
-    const { view, emitError } = setup()
-    act(() => view.result.current.start())
-
-    act(() => {
-      emitError('not-allowed', 'Microphone blocked')
-    })
-
-    expect(view.result.current.status).toBe('denied')
-    expect(view.result.current.message).toBe('Microphone blocked')
-  })
-
-  it('executes a compound draw-and-fill command', async () => {
+  it('executes a compound draw-and-fill command after review', async () => {
     const { engine, view, emitResult } = setup()
     act(() => view.result.current.start())
 
     await act(async () => {
       emitResult('draw a circle and fill it red')
+    })
+
+    expect(engine.getOperations().some((operation) => operation.kind === 'shape')).toBe(false)
+    expect(view.result.current.draft?.description).toMatch(/drew/i)
+
+    await act(async () => {
+      await view.result.current.runDraft()
     })
 
     expect(engine.getOperations().some((operation) => operation.kind === 'shape')).toBe(true)
@@ -190,15 +230,30 @@ describe('useVoiceCommands', () => {
     expect(view.result.current.status).toBe('transcribing')
   })
 
-  it('opens the help panel on request', async () => {
+  it('opens the help panel after the draft is applied', async () => {
     const { view, emitResult } = setup()
     act(() => view.result.current.start())
 
     await act(async () => {
       emitResult('what can I say')
     })
+    await act(async () => {
+      await view.result.current.runDraft()
+    })
 
     expect(view.result.current.helpOpen).toBe(true)
+  })
+
+  it('surfaces permission denial', () => {
+    const { view, emitError } = setup()
+    act(() => view.result.current.start())
+
+    act(() => {
+      emitError('not-allowed', 'Microphone blocked')
+    })
+
+    expect(view.result.current.status).toBe('denied')
+    expect(view.result.current.message).toBe('Microphone blocked')
   })
 
   it('reports unsupported when the adapter is unavailable', () => {

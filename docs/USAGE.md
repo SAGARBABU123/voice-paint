@@ -77,7 +77,10 @@ larger than the viewport, pan by scrolling (or with the scrollbars). Hold
 
 1. Press **Start voice control** and allow microphone access.
 2. Wait for the **Listening…** indicator, then speak one phrase.
-3. The recognised phrase and the result appear below the controls.
+3. What you said is **transcribed on the right** (Whisper can hear English or
+   Telugu). Read it, then press **Enter** (or **Apply**) to paint it.
+4. The result appears in the transcript panel. Nothing is drawn until you
+   confirm, so a misheard command can't change your painting by surprise.
 
 Only **final** phrases are executed. Interim and low-confidence results are shown
 but never change the canvas. Destructive actions (clearing) always ask for

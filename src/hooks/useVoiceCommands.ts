@@ -42,14 +42,25 @@ export type VoiceCommandController = {
   isListening: boolean
   transcript: string
   message: string
+  /** A parsed, ready-to-apply command that the user must review first. */
+  draft: VoiceDraft | null
   pendingConfirm: PaintCommand | null
   helpOpen: boolean
   start: () => void
   stop: () => void
+  /** Applies the reviewed draft (e.g. pressing Enter). */
+  runDraft: () => Promise<void>
+  dismissDraft: () => void
   confirmPending: () => Promise<void>
   cancelPending: () => void
   toggleHelp: () => void
   closeHelp: () => void
+}
+
+export type VoiceDraft = {
+  transcript: string
+  description: string
+  commands: PaintCommand[]
 }
 
 function describeCommand(command: PaintCommand): string {
@@ -98,6 +109,7 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}): VoiceCo
   const [status, setStatus] = useState<SpeechRecognitionStatus>(supported ? 'idle' : 'unsupported')
   const [transcript, setTranscript] = useState('')
   const [message, setMessage] = useState('')
+  const [draft, setDraft] = useState<VoiceDraft | null>(null)
   const [pendingConfirm, setPendingConfirm] = useState<PaintCommand | null>(null)
   const [helpOpen, setHelpOpen] = useState(false)
 
@@ -120,24 +132,29 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}): VoiceCo
     [engine],
   )
 
-  const handleFinalTranscript = useCallback(
-    (text: string) => {
-      const parsed = parseCommand(text)
-      if (!parsed.ok) {
-        setMessage(parsed.message)
-        return
-      }
+  const handleFinalTranscript = useCallback((text: string) => {
+    const parsed = parseCommand(text)
+    if (!parsed.ok) {
+      setDraft(null)
+      setMessage(parsed.message)
+      return
+    }
 
-      const validation = validateCommands(parsed.commands)
-      if (!validation.ok) {
-        setMessage(validation.message)
-        return
-      }
+    const validation = validateCommands(parsed.commands)
+    if (!validation.ok) {
+      setDraft(null)
+      setMessage(validation.message)
+      return
+    }
 
-      void runCommands(validation.commands)
-    },
-    [runCommands],
-  )
+    // Review first: nothing is applied until the user presses Enter/Run.
+    setDraft({
+      transcript: text,
+      description: describeCommands(validation.commands),
+      commands: validation.commands,
+    })
+    setMessage('')
+  }, [])
 
   const start = useCallback(() => {
     if (!supported) {
@@ -179,6 +196,18 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}): VoiceCo
     setStatus((current) => (current === 'transcribing' ? current : 'idle'))
   }, [adapter])
 
+  const runDraft = useCallback(async () => {
+    const current = draft
+    if (!current) return
+    setDraft(null)
+    await runCommands(current.commands)
+  }, [draft, runCommands])
+
+  const dismissDraft = useCallback(() => {
+    setDraft(null)
+    setMessage('Draft cancelled. Nothing was changed.')
+  }, [])
+
   const confirmPending = useCallback(async () => {
     const command = pendingConfirm
     setPendingConfirm(null)
@@ -201,10 +230,13 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}): VoiceCo
     isListening: status === 'listening',
     transcript,
     message,
+    draft,
     pendingConfirm,
     helpOpen,
     start,
     stop,
+    runDraft,
+    dismissDraft,
     confirmPending,
     cancelPending,
     toggleHelp,

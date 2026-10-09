@@ -38,8 +38,17 @@ export function EditorShell() {
 
       <Toolbar cropMode={cropMode} onToggleCrop={toggleCrop} />
 
-      <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-4">
-        <CanvasStage cropMode={cropMode} onCropComplete={exitCrop} />
+      <main className="flex min-h-0 flex-1 gap-3 overflow-hidden p-4">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <CanvasStage cropMode={cropMode} onCropComplete={exitCrop} />
+        </div>
+
+        <aside
+          aria-label="Voice transcript"
+          className="w-80 shrink-0 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-950"
+        >
+          <VoicePanel />
+        </aside>
       </main>
 
       {shortcutsOpen ? (
@@ -48,7 +57,6 @@ export function EditorShell() {
         </div>
       ) : null}
 
-      <VoicePanel />
       <StatusBar persistence={persistence.status} />
     </div>
   )
