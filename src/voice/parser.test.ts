@@ -163,6 +163,43 @@ describe('parseCommand — actions', () => {
   )
 })
 
+describe('parseCommand — Telugu', () => {
+  it('parses a Telugu compound draw-and-fill phrase', () => {
+    expect(commandsOf(parseCommand('వృత్తం గీయి మరియు ఎరుపు నింపు'))).toEqual([
+      { type: 'shape.draw', tool: 'ellipse' },
+      { type: 'color.set', color: '#ef4444' },
+      { type: 'canvas.fill' },
+    ])
+  })
+
+  it('parses romanised Telugu', () => {
+    expect(commandsOf(parseCommand('vrutham geyyi mariyu erupu nimpu'))).toEqual([
+      { type: 'shape.draw', tool: 'ellipse' },
+      { type: 'color.set', color: '#ef4444' },
+      { type: 'canvas.fill' },
+    ])
+  })
+
+  it('maps Telugu colour words', () => {
+    expect(commandsOf(parseCommand('నీలం రంగు'))).toEqual([{ type: 'color.set', color: '#3b82f6' }])
+    expect(commandsOf(parseCommand('telupu'))).toEqual([{ type: 'color.set', color: '#ffffff' }])
+  })
+
+  it('selects Telugu tool words', () => {
+    expect(commandsOf(parseCommand('పెన్సిల్ ఎంచుకో'))).toEqual([
+      { type: 'tool.select', tool: 'pencil' },
+    ])
+    expect(commandsOf(parseCommand('chadaram'))).toEqual([
+      { type: 'tool.select', tool: 'rectangle' },
+    ])
+  })
+
+  it('understands Telugu action words', () => {
+    expect(commandsOf(parseCommand('తుడిచి పెట్టు'))[0]?.type).toBe('canvas.clear')
+    expect(commandsOf(parseCommand('వెనక్కి'))[0]?.type).toBe('history.undo')
+  })
+})
+
 describe('parseCommand — normalization', () => {
   it('is case- and punctuation-insensitive', () => {
     expect(commandsOf(parseCommand('Use the RED Brush!'))).toEqual(

@@ -16,6 +16,30 @@ export const TOOL_ALIASES: Readonly<Record<string, PaintTool>> = {
   ellipse: 'ellipse',
   oval: 'ellipse',
   circle: 'ellipse',
+  // Telugu (script)
+  వృత్తం: 'ellipse',
+  గుండ్రం: 'ellipse',
+  దీర్ఘవృత్తం: 'ellipse',
+  దీర్ఘచతురస్రం: 'rectangle',
+  చతురస్రం: 'rectangle',
+  గీత: 'line',
+  రేఖ: 'line',
+  పెన్సిల్: 'pencil',
+  బ్రష్: 'pencil',
+  ఎరేజర్: 'eraser',
+  టెక్స్ట్: 'text',
+  // Romanised Telugu
+  vruttham: 'ellipse',
+  vrutham: 'ellipse',
+  vruttam: 'ellipse',
+  gundram: 'ellipse',
+  chathurasram: 'rectangle',
+  chadaram: 'rectangle',
+  githa: 'line',
+  rekha: 'line',
+  pensil: 'pencil',
+  erejar: 'eraser',
+  text: 'text',
 }
 
 /** Spoken colour name -> hex value accepted by the engine. */
@@ -35,6 +59,31 @@ export const COLOR_NAMES: Readonly<Record<string, string>> = {
   cyan: '#06b6d4',
   teal: '#14b8a6',
   magenta: '#d946ef',
+  // Telugu (script)
+  ఎరుపు: '#ef4444',
+  నీలం: '#3b82f6',
+  ఆకుపచ్చ: '#22c55e',
+  పసుపు: '#eab308',
+  నారింజ: '#f97316',
+  ఊదా: '#8b5cf6',
+  గులాబీ: '#ec4899',
+  గోధుమ: '#8b5a2b',
+  నలుపు: '#000000',
+  తెలుపు: '#ffffff',
+  బూడిద: '#78716c',
+  బంగారు: '#eab308',
+  // Romanised Telugu
+  erupu: '#ef4444',
+  nilam: '#3b82f6',
+  pachha: '#22c55e',
+  pasupu: '#eab308',
+  narimja: '#f97316',
+  ooda: '#8b5cf6',
+  gulaabi: '#ec4899',
+  godhuma: '#8b5a2b',
+  nalupu: '#000000',
+  telupu: '#ffffff',
+  burida: '#78716c',
 }
 
 /** Example phrases shown in the in-app "What can I say?" help. */
@@ -53,4 +102,6 @@ export const COMMAND_EXAMPLES: readonly string[] = [
   'clear canvas',
   'export PNG',
   'what can I say?',
+  'వృత్తం గీయి మరియు ఎరుపు నింపు',
+  'vrutham geyyi mariyu erupu nimpu',
 ]

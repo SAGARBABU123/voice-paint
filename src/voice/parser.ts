@@ -2,22 +2,76 @@ import { isShapeTool, type PaintTool } from '../paint/types'
 import { COLOR_NAMES, TOOL_ALIASES } from './grammar'
 import type { CommandParseResult, ParseFailureReason, PaintCommand } from './types'
 
-const SIZE_WORDS = ['size', 'width'] as const
-const BRUSH_WORDS = ['brush', 'line', 'stroke'] as const
-const DRAW_WORDS = ['draw', 'add', 'create', 'place'] as const
-const FILL_WORDS = ['fill', 'bucket'] as const
+const SIZE_WORDS = ['size', 'width', 'సైజు', 'పరిమాణం'] as const
+const BRUSH_WORDS = ['brush', 'line', 'stroke', 'బ్రష్'] as const
+const DRAW_WORDS = ['draw', 'add', 'create', 'place', 'గీయి', 'డ్రా', 'geyyi'] as const
+const FILL_WORDS = ['fill', 'bucket', 'నింపు', 'ఫిల్', 'nimpu'] as const
+const UNDO_WORDS = ['undo', 'రద్దు', 'వెనక్కి'] as const
+const REDO_WORDS = ['redo', 'మళ్ళీ', 'రీడూ'] as const
+const CLEAR_WORDS = ['clear', 'wipe', 'తుడిచి', 'క్లియర్', 'తొలగించు'] as const
+const EXPORT_WORDS = ['export', 'download', 'ఎగుమతి', 'డౌన్లోడ్'] as const
+const SAVE_WORDS = ['save', 'సేవ్'] as const
+const HELP_WORDS = ['help', 'సహాయం'] as const
+const WHY_WORDS = ['color', 'colour', 'రంగు'] as const
+const SMALLER_WORDS = ['smaller', 'thinner', 'decrease', 'చిన్న', 'తగ్గించు'] as const
+const LARGER_WORDS = ['bigger', 'larger', 'thicker', 'increase', 'పెద్ద', 'పెంచు'] as const
+const ACTION_WORDS = [
+  'use',
+  'switch',
+  'select',
+  'choose',
+  'draw',
+  'set',
+  'change',
+  'ఎంచుకో',
+  'మార్చు',
+  'పెట్టు',
+  'గీయి',
+] as const
 
-/** Lowercases, strips punctuation (keeping `#`), and collapses whitespace. */
+/** Connectors that join clauses, with whether Latin word boundaries apply. */
+const CONNECTORS: readonly [string, boolean][] = [
+  ['and', true],
+  ['then', true],
+  ['also', true],
+  ['మరియు', false],
+  ['తరువాత', false],
+  ['mariyu', false],
+  ['taruvata', false],
+]
+
+/**
+ * Lowercases, strips punctuation (keeping `#` and letters from any script such
+ * as Telugu), and collapses whitespace.
+ */
 export function normalizeTranscript(transcript: string): string {
-  return transcript
-    .toLowerCase()
-    .replace(/[^a-z0-9#\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return (
+    transcript
+      .toLowerCase()
+      // Keep letters, numbers, combining marks (needed for Indic scripts), `#`.
+      .replace(/[^\p{L}\p{N}\p{M}#\s]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  )
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Splits a phrase into clauses at the known connectors. */
+function splitClauses(text: string): string[] {
+  const pattern = CONNECTORS.map(([word, boundary]) =>
+    boundary ? `\\b${escapeRegExp(word)}\\b` : escapeRegExp(word),
+  ).join('|')
+  return text
+    .split(new RegExp(`(?:${pattern})`))
+    .map((clause) => clause.trim())
+    .filter((clause) => clause.length > 0)
 }
 
 function hasWord(text: string, word: string): boolean {
-  return new RegExp(`\\b${word}\\b`).test(text)
+  return text.split(/\s+/).includes(word)
 }
 
 function hasAny(text: string, words: readonly string[]): boolean {
@@ -51,14 +105,6 @@ function ok(commands: PaintCommand[]): CommandParseResult {
   return { ok: true, commands }
 }
 
-/** Splits a phrase into clauses at "and", "then", and "also". */
-function splitClauses(text: string): string[] {
-  return text
-    .split(/\b(?:and|then|also)\b/)
-    .map((clause) => clause.trim())
-    .filter((clause) => clause.length > 0)
-}
-
 /**
  * Parses a single clause into allowlisted commands. It only ever returns typed
  * commands or a structured failure and never executes anything.
@@ -68,36 +114,33 @@ function parseClause(text: string): CommandParseResult {
     return failure('unknown', 'I did not catch that. Try saying "use pencil".')
   }
 
-  if (hasWord(text, 'undo') && hasWord(text, 'redo')) {
+  if (hasAny(text, UNDO_WORDS) && hasAny(text, REDO_WORDS)) {
     return failure('ambiguous', 'Did you mean "undo" or "redo"? Please say one.')
   }
 
-  if (hasAny(text, ['clear', 'wipe'])) {
+  if (hasAny(text, CLEAR_WORDS)) {
     return ok([{ type: 'canvas.clear' }])
   }
 
   if (
-    hasAny(text, ['help']) ||
+    hasAny(text, HELP_WORDS) ||
     /what can i say/.test(text) ||
     (hasWord(text, 'show') && hasWord(text, 'commands'))
   ) {
     return ok([{ type: 'help.open' }])
   }
 
-  if (
-    hasAny(text, ['export', 'download']) ||
-    (hasWord(text, 'save') && hasAny(text, ['png', 'image', 'picture', 'file']))
-  ) {
+  if (hasAny(text, EXPORT_WORDS)) {
     return ok([{ type: 'canvas.export', format: 'png' }])
   }
 
-  if (hasWord(text, 'undo')) return ok([{ type: 'history.undo' }])
-  if (hasWord(text, 'redo')) return ok([{ type: 'history.redo' }])
+  if (hasAny(text, UNDO_WORDS)) return ok([{ type: 'history.undo' }])
+  if (hasAny(text, REDO_WORDS)) return ok([{ type: 'history.redo' }])
 
-  if (hasAny(text, ['smaller', 'thinner', 'decrease'])) {
+  if (hasAny(text, SMALLER_WORDS)) {
     return ok([{ type: 'brush.size.adjust', direction: 'smaller' }])
   }
-  if (hasAny(text, ['bigger', 'larger', 'thicker', 'increase'])) {
+  if (hasAny(text, LARGER_WORDS)) {
     return ok([{ type: 'brush.size.adjust', direction: 'larger' }])
   }
 
@@ -133,6 +176,13 @@ function parseClause(text: string): CommandParseResult {
     }
   }
 
+  if (
+    hasAny(text, SAVE_WORDS) &&
+    hasAny(text, ['png', 'image', 'picture', 'file', 'ఫైల్', 'పిఎన్జి'])
+  ) {
+    return ok([{ type: 'canvas.export', format: 'png' }])
+  }
+
   if (tool && color) {
     return ok([
       { type: 'color.set', color },
@@ -142,13 +192,13 @@ function parseClause(text: string): CommandParseResult {
   if (tool) return ok([{ type: 'tool.select', tool }])
   if (color) return ok([{ type: 'color.set', color }])
 
-  if (hasAny(text, ['color', 'colour'])) {
+  if (hasAny(text, WHY_WORDS)) {
     return failure('missing_parameter', 'Which colour? Try "set color to red".')
   }
   if (hasAny(text, SIZE_WORDS)) {
     return failure('missing_parameter', 'What brush size? Try "set brush size to 8".')
   }
-  if (hasAny(text, ['use', 'switch', 'select', 'choose', 'draw', 'set', 'change'])) {
+  if (hasAny(text, ACTION_WORDS)) {
     return failure(
       'missing_parameter',
       'What should I change? Try "use pencil" or "set color to red".',
@@ -165,7 +215,8 @@ function parseClause(text: string): CommandParseResult {
  * Deterministic phrase -> commands parser. A phrase may contain several clauses
  * ("draw a circle and fill it red"); each clause is parsed independently and
  * the results are concatenated. If any clause fails, the whole phrase fails so
- * a partial command is never executed.
+ * a partial command is never executed. English and Telugu (script or
+ * romanised) are both supported.
  */
 export function parseCommand(transcript: string): CommandParseResult {
   const text = normalizeTranscript(transcript)
@@ -174,7 +225,7 @@ export function parseCommand(transcript: string): CommandParseResult {
   }
 
   // Contradictory history intents stay ambiguous even across a compound phrase.
-  if (hasWord(text, 'undo') && hasWord(text, 'redo')) {
+  if (hasAny(text, UNDO_WORDS) && hasAny(text, REDO_WORDS)) {
     return failure('ambiguous', 'Did you mean "undo" or "redo"? Please say one.')
   }
 

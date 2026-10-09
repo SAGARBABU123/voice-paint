@@ -42,6 +42,21 @@ If **any** clause is unknown, the whole phrase fails with a message and nothing
 is drawn — a partial command is never executed. Contradictory input such as
 "undo and redo" is rejected as ambiguous.
 
+## Multilingual (Telugu)
+
+The parser accepts **English**, **Telugu script**, and **romanised Telugu**. The
+typing and execution path is identical — only the spoken words differ:
+
+- English: "draw a circle and fill it with red color"
+- Telugu: "వృత్తం గీయి మరియు ఎరుపు నింపు"
+- Romanised: "vrutham geyyi mariyu erupu nimpu"
+
+Colours (ఎరుపు/erupu = red, నీలం/nilam = blue, …), tools
+(వృత్తం/vrutham = circle, …), sizes, and actions (తుడిచి = clear, వెనక్కి =
+undo, …) all map through the same allowlist. Telugu transcriptions must come
+from a recogniser that can produce them — the Whisper Worker can; the browser
+Web Speech API generally cannot.
+
 > Behaviour change: "draw a circle" now **draws** a centred shape (previously it
 > only selected the tool). Say "select circle" or just "circle" to only change
 > the tool.
