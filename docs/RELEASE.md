@@ -20,6 +20,17 @@ client-side routing, no rewrite/redirect rules are needed.
 - Build command: `npm run build`
 - Publish directory: `dist`
 
+### Current live deployment
+
+- App: `https://voice-over-paint.gudipudisagarbabu9.workers.dev`
+- Whisper Worker: `https://voice-over-paint-whisper.gudipudisagarbabu9.workers.dev`
+
+> Deploy the app with `wrangler pages deploy dist --project-name=voice-over-paint`
+> (build first with the `VITE_WHISPER_*` env vars set). Do **not** use
+> `wrangler deploy` with the app's assets: it can rebuild `dist` without your
+> VITE environment. The Worker is deployed with
+> `wrangler deploy --config whisper-worker/wrangler.toml`.
+
 ### Cloudflare (recommended)
 
 The app is a PWA (manifest + service worker), so a host with **unlimited static

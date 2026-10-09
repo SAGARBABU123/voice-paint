@@ -45,9 +45,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      # --config keeps wrangler on the worker's own file; it must not pick up
+      # any other wrangler config above this directory.
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: whisper-worker
-          command: deploy
+          command: deploy --config whisper-worker/wrangler.toml

@@ -12,7 +12,8 @@
  */
 
 type AiRunInput = {
-  audio: number[]
+  /** Base64-encoded audio; that is the shape the model's schema accepts. */
+  audio: string
   task: 'transcribe' | 'translate'
   language?: string
 }
@@ -44,6 +45,16 @@ function corsHeaders(origin: string | null, allowedOrigins: string | undefined):
   else if (origin && allowed.includes(origin)) headers.set('access-control-allow-origin', origin)
 
   return headers
+}
+
+/** Workers AI Whisper expects the audio as a base64 string. */
+function toBase64(bytes: Uint8Array): string {
+  let binary = ''
+  const CHUNK = 0x8000
+  for (let index = 0; index < bytes.length; index += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + CHUNK))
+  }
+  return btoa(binary)
 }
 
 function json(body: unknown, status: number, headers: Headers): Response {
@@ -78,15 +89,16 @@ export default {
 
     try {
       const result = await env.AI.run(MODEL, {
-        audio: Array.from(audio),
+        audio: toBase64(audio),
         task,
         ...(language ? { language } : {}),
       })
       const text = (result.text ?? '').trim()
       if (!text) return json({ text: '', error: 'No speech detected.' }, 422, cors)
       return json({ text }, 200, cors)
-    } catch {
-      return json({ error: 'Transcription failed.' }, 502, cors)
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error)
+      return json({ error: 'Transcription failed.', detail: detail.slice(0, 500) }, 502, cors)
     }
   },
 }
