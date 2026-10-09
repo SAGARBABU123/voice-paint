@@ -57,6 +57,24 @@ separate Worker (`whisper-worker/`) using Workers AI.
    never turn into a bill. Set `ALLOWED_ORIGINS` in `wrangler.toml` to your
    Pages URL before going public.
 
+## Branching & review flow
+
+- `main` is always the **shippable, deployed** branch. Deploys to Cloudflare only
+  happen from `main` (deploy.yml waits for CI to pass on `main`).
+- All new work happens on a child branch from `main` (currently **`develop`**).
+  CI runs on **every** branch push and pull request.
+- To ship: push to `develop` → open a **pull request to `main`** → CI runs on
+  the PR → merge only when it is green (branch protection should require the
+  `Typecheck · Lint · Format · Unit · Build` status check).
+- The local pre-push hook (`npm run typecheck && lint && format:check &&
+test:run`) blocks pushing anything that would fail CI anyway.
+
+```text
+develop ──────────────► main ──► deploy.yml ──► Cloudflare
+   │                       (CI must pass)
+   └── (feature commit) ───┘
+```
+
 ## Continuous integration
 
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on push and pull
