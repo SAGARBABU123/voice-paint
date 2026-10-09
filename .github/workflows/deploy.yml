@@ -30,11 +30,13 @@ jobs:
         env:
           VITE_WHISPER_ENDPOINT: ${{ secrets.VITE_WHISPER_ENDPOINT }}
           VITE_WHISPER_LANGUAGE: ${{ secrets.VITE_WHISPER_LANGUAGE }}
+      # 'wrangler deploy' publishes the app from the committed root
+      # wrangler.jsonc (assets.directory = dist) — Pages is now part of Workers.
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=voice-over-paint
+          command: deploy
 
   whisper:
     name: Deploy Whisper worker

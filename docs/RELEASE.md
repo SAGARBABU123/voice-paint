@@ -25,11 +25,20 @@ client-side routing, no rewrite/redirect rules are needed.
 - App: `https://voice-over-paint.gudipudisagarbabu9.workers.dev`
 - Whisper Worker: `https://voice-over-paint-whisper.gudipudisagarbabu9.workers.dev`
 
-> Deploy the app with `wrangler pages deploy dist --project-name=voice-over-paint`
-> (build first with the `VITE_WHISPER_*` env vars set). Do **not** use
-> `wrangler deploy` with the app's assets: it can rebuild `dist` without your
-> VITE environment. The Worker is deployed with
-> `wrangler deploy --config whisper-worker/wrangler.toml`.
+Deploy both from the repo root (committed `wrangler.jsonc` covers the app):
+
+```bash
+VITE_WHISPER_ENDPOINT=https://voice-over-paint-whisper.<sub>.workers.dev \
+VITE_WHISPER_LANGUAGE=te \
+CLOUDFLARE_API_TOKEN=<token> CLOUDFLARE_ACCOUNT_ID=<id> \
+  ./scripts/deploy-cloudflare.sh
+```
+
+or manually: build with the `VITE_WHISPER_*` env vars, then
+`wrangler deploy --config whisper-worker/wrangler.toml` (worker) and
+`wrangler deploy` (app). Note: Cloudflare's CLI sometimes scaffolds a Vite
+plugin into `package.json`/`vite.config.ts` during deploys; `git checkout`
+those files afterwards so the repo stays a plain static build.
 
 ### Cloudflare (recommended)
 
