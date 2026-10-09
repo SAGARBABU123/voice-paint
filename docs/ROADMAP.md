@@ -57,11 +57,18 @@ limitations, passing quality gates.
   "and/then/also", new allowlisted `shape.draw` and `canvas.fill` intents, and a
   shared-engine route so "draw a circle and fill it red" works. Deterministic
   grammar; no LLM. Multilingual (Telugu) and packaging remain later phases.
-- **Phase 12 — Telugu / multilingual grammar** _(pending)_ — Telugu aliases for
-  tools, colours, and actions so Telugu transcripts parse into the same
-  allowlisted commands. Needed for end-to-end Telugu.
+- **Phase 12 — Telugu / multilingual grammar ✅** — Telugu script and romanised
+  aliases for tools, colours, sizes, actions, and connectors, with Unicode-safe
+  normalization ("వృత్తం గీయి మరియు ఎరుపు నింపు" and "vrutham geyyi mariyu erupu
+  nimpu" both parse). Same allowlisted commands.
 - **Phase 13 — Whisper speech engine ✅** — a standalone Cloudflare Worker
   (`whisper-worker/`) using Workers AI `whisper-large-v3-turbo`, plus a
   `WhisperSpeechAdapter` behind the existing adapter interface. Enabled by
   setting `VITE_WHISPER_ENDPOINT`; the browser Web Speech API stays as fallback.
   The parser, validator, and dispatcher are unchanged.
+- **Phase 14 — PWA packaging ✅** — web app manifest, icons (192/512/maskable),
+  and a service worker so the app installs and works offline. Native wrappers
+  (Tauri/Capacitor) remain documented options, not implemented.
+- **Phase 15 — Deploy & release pipeline ✅** — GitHub Actions deploys the app
+  to Cloudflare Pages and the Whisper worker via `wrangler`; release checklist
+  updated.

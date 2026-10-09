@@ -18,12 +18,12 @@ Both are locked decisions — do not change them silently.
 | M3 — UX & reliability | A11y, errors, E2E                             | ✅ Done |
 | M4 — Release          | Docs, CI, static deploy                       | ✅ Done |
 
-**Post-MVP (P1):** Phase 5 — local project persistence ✅. Phase 6 — image import
-· view controls ✅. Phase 7 — document transforms ✅. Phase 8 — text, fill, and
-selection/move ✅. Phase 9 — recent colours, palette polish, and cross-browser E2E
-✅. Phase 10 — reliability and accessibility hardening ✅. Phase 11 — compound
-voice commands ✅. Phase 13 — Whisper speech engine ✅ (Cloudflare Workers AI).
-Next: Phase 12 (Telugu grammar) and app packaging (Phase 14).
+**Post-MVP (P1):** Phase 5 ✅ persistence · Phase 6 ✅ image import/view ·
+Phase 7 ✅ transforms · Phase 8 ✅ text/fill/selection · Phase 9 ✅ colours +
+cross-browser E2E · Phase 10 ✅ a11y hardening · Phase 11 ✅ compound voice
+commands · Phase 12 ✅ Telugu grammar · Phase 13 ✅ Whisper speech engine
+(Cloudflare Workers AI) · Phase 14 ✅ PWA packaging · Phase 15 ✅ deploy
+pipeline.
 
 ## Stack (locked)
 
