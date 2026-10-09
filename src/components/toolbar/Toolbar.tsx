@@ -5,6 +5,7 @@ import { createImageOperation, readFileAsDataUrl } from '../../paint/image'
 import { loadImage } from '../../paint/imageCache'
 import { PAINT_TOOLS, type PaintTool } from '../../paint/types'
 import { TOOL_LABELS } from '../toolLabels'
+import { DocumentControls } from './DocumentControls'
 
 const TOOL_SHORTCUTS: Record<PaintTool, string> = {
   pencil: 'P',
@@ -29,7 +30,12 @@ function ActionButton(props: ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button type="button" {...props} className={buttonClass(false)} />
 }
 
-export function Toolbar() {
+export type ToolbarProps = {
+  cropMode?: boolean
+  onToggleCrop?: () => void
+}
+
+export function Toolbar({ cropMode = false, onToggleCrop }: ToolbarProps = {}) {
   const engine = usePaintEngine()
   const state = usePaintSnapshot()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -128,6 +134,8 @@ export function Toolbar() {
           {state.brushSize}px
         </span>
       </div>
+
+      <DocumentControls cropMode={cropMode} onToggleCrop={onToggleCrop ?? (() => {})} />
 
       <div
         className="flex flex-wrap items-center gap-2"

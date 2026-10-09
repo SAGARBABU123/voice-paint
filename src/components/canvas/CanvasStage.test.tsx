@@ -88,4 +88,44 @@ describe('CanvasStage', () => {
 
     expect(engine.getOperations()).toHaveLength(0)
   })
+
+  it('crops the document from a drag in crop mode', () => {
+    const engine = new PaintEngine()
+    const onCropComplete = vi.fn()
+    render(
+      <PaintEngineProvider engine={engine}>
+        <CanvasStage cropMode onCropComplete={onCropComplete} />
+      </PaintEngineProvider>,
+    )
+    const canvas = screen.getByLabelText(/drawing canvas/i)
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 960,
+      height: 720,
+      right: 960,
+      bottom: 720,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect)
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      button: 0,
+      pointerType: 'mouse',
+      clientX: 100,
+      clientY: 100,
+    })
+    fireEvent.pointerMove(canvas, { pointerId: 1, clientX: 300, clientY: 250 })
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 300, clientY: 250 })
+
+    const apply = screen.getByRole('button', { name: 'Apply crop' })
+    expect(apply).toBeEnabled()
+    fireEvent.click(apply)
+
+    expect(engine.width).toBe(200)
+    expect(engine.height).toBe(150)
+    expect(onCropComplete).toHaveBeenCalledTimes(1)
+  })
 })

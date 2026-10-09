@@ -47,7 +47,7 @@ export function useProjectPersistence(
           isProjectSnapshot(snapshot) &&
           engine.getSnapshot().operationCount === 0
         if (canRestore) {
-          engine.loadOperations(snapshot.operations)
+          engine.loadDocument(snapshot.width, snapshot.height, snapshot.operations)
         }
         lastSavedRevisionRef.current = engine.getSnapshot().revision
         readyRef.current = true

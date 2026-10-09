@@ -29,17 +29,16 @@ Notes:
 ## Known limitations (MVP)
 
 - **Import scales to fit** — an opened PNG/JPEG is scaled (contain) and centred
-  inside the 960 × 720 document; the document size does not change yet.
+  inside the document; importing does not resize the document.
 - **No transparency** — drawings composite onto the white background, so
   transparent areas of an imported image show as white, and the eraser paints the
   background colour.
-- **Clear is not undoable** — it resets the history and is guarded by a
-  confirmation.
+- **Clear is confirm-guarded** — clearing asks first and can now be undone.
 - **Fixed command grammar** — there is no natural-language understanding and no
   LLM in the command path; unknown phrasing returns a helpful message without
   changing the canvas.
-- **No layers, filters, text, crop, rotate, resize, or cloud storage** — deferred
-  by scope (zoom and pan are supported).
+- **No layers, filters, text, selection, or cloud storage** — deferred by scope;
+  rotate, crop, resize, zoom, and pan are supported.
 - **No backend, accounts, or analytics** — the app is a static site and stores
   nothing server-side. Drawings are kept in the browser's IndexedDB by default;
   clearing site data or using private browsing removes them.

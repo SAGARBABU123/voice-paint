@@ -8,11 +8,25 @@ import {
   MIN_BRUSH_SIZE,
 } from './constants'
 import { exportCanvasAsPng } from './export'
-import { clamp } from './geometry'
+import { clamp, clampRectToBounds, type Rect } from './geometry'
 import { History } from './history'
+import {
+  normalizeQuarterTurns,
+  rotateOperations,
+  rotatedSize,
+  scaleOperations,
+  translateOperations,
+} from './transforms'
 import { isPaintTool, type PaintOperation, type PaintTool } from './types'
 
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/
+
+/** A full, immutable document revision: dimensions plus the operations on it. */
+export type DocumentState = {
+  width: number
+  height: number
+  operations: PaintOperation[]
+}
 
 export type PaintSnapshot = {
   activeTool: PaintTool
@@ -35,32 +49,47 @@ export type PaintEngineOptions = {
   background?: string
 }
 
+function positiveInt(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback
+  return Math.max(1, Math.round(value))
+}
+
 /**
- * Owns the supported drawing state and the operation history. It is framework
- * free and has no knowledge of React. UI components read it through
- * `getSnapshot()` and mutate it through the typed methods below.
+ * Owns the supported document state and the history of document revisions. It
+ * is framework free and has no knowledge of React. Every mutation (drawing or
+ * a transform) pushes a new revision, so undo/redo is uniform.
  */
 export class PaintEngine {
-  readonly width: number
-  readonly height: number
   readonly background: string
 
+  private initial: DocumentState
   private activeTool: PaintTool = 'pencil'
   private color: string
   private brushSize: number
-  private readonly history = new History<PaintOperation>()
+  private readonly history = new History<DocumentState>()
   private readonly listeners = new Set<() => void>()
   private canvas: HTMLCanvasElement | null = null
   private revision = 0
   private snapshot: PaintSnapshot
 
   constructor(options: PaintEngineOptions = {}) {
-    this.width = options.width ?? DOCUMENT_WIDTH
-    this.height = options.height ?? DOCUMENT_HEIGHT
     this.background = options.background ?? BACKGROUND_COLOR
+    this.initial = {
+      width: positiveInt(options.width ?? DOCUMENT_WIDTH, DOCUMENT_WIDTH),
+      height: positiveInt(options.height ?? DOCUMENT_HEIGHT, DOCUMENT_HEIGHT),
+      operations: [],
+    }
     this.color = normalizeColor(options.color) ?? DEFAULT_COLOR
     this.brushSize = clampBrushSize(options.brushSize ?? DEFAULT_BRUSH_SIZE)
     this.snapshot = this.buildSnapshot()
+  }
+
+  get width(): number {
+    return this.current.width
+  }
+
+  get height(): number {
+    return this.current.height
   }
 
   subscribe = (listener: () => void): (() => void) => {
@@ -73,7 +102,7 @@ export class PaintEngine {
   getSnapshot = (): PaintSnapshot => this.snapshot
 
   getOperations(): readonly PaintOperation[] {
-    return this.history.applied
+    return this.current.operations
   }
 
   attachCanvas(canvas: HTMLCanvasElement | null): void {
@@ -101,8 +130,12 @@ export class PaintEngine {
   }
 
   commit(operation: PaintOperation): void {
-    this.history.push(operation)
-    this.emit()
+    const current = this.current
+    this.pushDocument({
+      width: current.width,
+      height: current.height,
+      operations: [...current.operations, operation],
+    })
   }
 
   undo(): boolean {
@@ -118,20 +151,79 @@ export class PaintEngine {
   }
 
   clear(): void {
-    if (this.history.length === 0) return
+    const current = this.current
+    if (current.operations.length === 0) return
+    this.pushDocument({ width: current.width, height: current.height, operations: [] })
+  }
+
+  /** Replaces the document and resets history, e.g. when restoring a project. */
+  loadDocument(width: number, height: number, operations: readonly PaintOperation[]): void {
+    this.initial = {
+      width: positiveInt(width, DOCUMENT_WIDTH),
+      height: positiveInt(height, DOCUMENT_HEIGHT),
+      operations: [...operations],
+    }
     this.history.clear()
     this.emit()
   }
 
-  /** Replaces the document with a saved set of operations. */
-  loadOperations(operations: readonly PaintOperation[]): void {
-    this.history.replace(operations)
-    this.emit()
+  /** Rotates the document clockwise by whole quarter-turns. */
+  rotateDocument(quarterTurns: number): void {
+    const turns = normalizeQuarterTurns(quarterTurns)
+    if (turns === 0) return
+
+    const current = this.current
+    const size = rotatedSize(current.width, current.height, turns)
+    this.pushDocument({
+      width: size.width,
+      height: size.height,
+      operations: rotateOperations(current.operations, turns, current.width, current.height),
+    })
+  }
+
+  /** Resizes the document, scaling the content to the new dimensions. */
+  resizeDocument(width: number, height: number): void {
+    if (!Number.isFinite(width) || !Number.isFinite(height)) return
+
+    const current = this.current
+    const nextWidth = positiveInt(width, current.width)
+    const nextHeight = positiveInt(height, current.height)
+    if (nextWidth === current.width && nextHeight === current.height) return
+
+    const scaleX = nextWidth / current.width
+    const scaleY = nextHeight / current.height
+    this.pushDocument({
+      width: nextWidth,
+      height: nextHeight,
+      operations: scaleOperations(current.operations, scaleX, scaleY),
+    })
+  }
+
+  /** Crops to a rectangle, clamped to the document bounds. */
+  cropDocument(rect: Rect): void {
+    const current = this.current
+    const bounded = clampRectToBounds(rect, current.width, current.height)
+    if (bounded.width < 1 || bounded.height < 1) return
+
+    this.pushDocument({
+      width: Math.max(1, Math.round(bounded.width)),
+      height: Math.max(1, Math.round(bounded.height)),
+      operations: translateOperations(current.operations, -bounded.x, -bounded.y),
+    })
   }
 
   async exportPng(filename = 'voice-over-paint.png'): Promise<void> {
     if (!this.canvas) throw new Error('Canvas is not attached yet.')
     await exportCanvasAsPng(this.canvas, filename)
+  }
+
+  private get current(): DocumentState {
+    return this.history.last ?? this.initial
+  }
+
+  private pushDocument(next: DocumentState): void {
+    this.history.push(next)
+    this.emit()
   }
 
   private emit(): void {
@@ -141,16 +233,17 @@ export class PaintEngine {
   }
 
   private buildSnapshot(): PaintSnapshot {
+    const current = this.current
     return {
       activeTool: this.activeTool,
       color: this.color,
       brushSize: this.brushSize,
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
-      operationCount: this.history.appliedCount,
+      operationCount: current.operations.length,
       revision: this.revision,
-      documentWidth: this.width,
-      documentHeight: this.height,
+      documentWidth: current.width,
+      documentHeight: current.height,
       background: this.background,
     }
   }

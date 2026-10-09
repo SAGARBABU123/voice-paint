@@ -40,4 +40,11 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Zoom in' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Fit to window' })).toBeInTheDocument()
   })
+
+  it('exposes document transform controls', async () => {
+    await renderApp()
+    expect(screen.getByRole('group', { name: 'Document' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Rotate right' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Resize' })).toBeInTheDocument()
+  })
 })

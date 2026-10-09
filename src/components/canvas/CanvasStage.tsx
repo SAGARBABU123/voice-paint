@@ -3,12 +3,13 @@ import {
   useEffect,
   useLayoutEffect,
   useRef,
+  useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
 import { useViewport } from '../../hooks/useViewport'
 import { clientToDocumentPoint } from '../../paint/coordinates'
-import { distance } from '../../paint/geometry'
+import { distance, normalizeRect, type Rect } from '../../paint/geometry'
 import { createId } from '../../paint/id'
 import { getCachedImage, preloadImages } from '../../paint/imageCache'
 import { renderScene } from '../../paint/renderer'
@@ -16,12 +17,19 @@ import { isImageOperation, isStrokeTool, type PaintOperation, type Point } from 
 import { ViewControls } from './ViewControls'
 
 const MIN_POINT_DISTANCE = 1
+const ACTION_CLASS =
+  'rounded-md border border-neutral-300 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700'
+
+export type CanvasStageProps = {
+  cropMode?: boolean
+  onCropComplete?: () => void
+}
 
 /**
- * The canvas workspace. It owns pointer input mapping and view zoom, and
- * delegates all document state to the shared PaintEngine.
+ * The canvas workspace. It owns pointer input mapping, view zoom, and the crop
+ * marquee, and delegates all document state to the shared PaintEngine.
  */
-export function CanvasStage() {
+export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStageProps = {}) {
   const engine = usePaintEngine()
   const state = usePaintSnapshot()
   const view = useViewport({ documentWidth: engine.width, documentHeight: engine.height })
@@ -32,6 +40,17 @@ export function CanvasStage() {
   const contextRef = useRef<CanvasRenderingContext2D | null>(null)
   const draftRef = useRef<PaintOperation | null>(null)
   const drawingRef = useRef(false)
+  const cropStartRef = useRef<Point | null>(null)
+  const [crop, setCrop] = useState<{ active: boolean; rect: Rect | null }>({
+    active: false,
+    rect: null,
+  })
+
+  // React's recommended pattern for resetting state when a prop changes.
+  if (crop.active !== cropMode) {
+    setCrop({ active: cropMode, rect: null })
+  }
+  const cropRect = crop.active ? crop.rect : null
 
   const paint = useCallback(() => {
     const context = contextRef.current
@@ -99,6 +118,11 @@ export function CanvasStage() {
     return () => viewport.removeEventListener('wheel', handleWheel)
   }, [zoomIn, zoomOut])
 
+  useEffect(() => {
+    if (cropMode) return
+    cropStartRef.current = null
+  }, [cropMode])
+
   const handleFit = useCallback(() => {
     const viewport = viewportRef.current
     if (!viewport) return
@@ -117,12 +141,37 @@ export function CanvasStage() {
     )
   }
 
-  const handlePointerDown = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return
+  const capturePointer = (pointerId: number) => {
     const canvas = canvasRef.current
     if (canvas && typeof canvas.setPointerCapture === 'function') {
-      canvas.setPointerCapture(event.pointerId)
+      canvas.setPointerCapture(pointerId)
     }
+  }
+
+  const releasePointer = (pointerId: number) => {
+    const canvas = canvasRef.current
+    if (
+      canvas &&
+      typeof canvas.releasePointerCapture === 'function' &&
+      typeof canvas.hasPointerCapture === 'function' &&
+      canvas.hasPointerCapture(pointerId)
+    ) {
+      canvas.releasePointerCapture(pointerId)
+    }
+  }
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+
+    if (cropMode) {
+      capturePointer(event.pointerId)
+      const point = toDocumentPoint(event)
+      cropStartRef.current = point
+      setCrop({ active: true, rect: { x: point.x, y: point.y, width: 0, height: 0 } })
+      return
+    }
+
+    capturePointer(event.pointerId)
     drawingRef.current = true
 
     const point = toDocumentPoint(event)
@@ -149,6 +198,13 @@ export function CanvasStage() {
   }
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (cropMode) {
+      const start = cropStartRef.current
+      if (!start) return
+      setCrop({ active: true, rect: normalizeRect(start, toDocumentPoint(event)) })
+      return
+    }
+
     if (!drawingRef.current) return
     const draft = draftRef.current
     if (!draft) return
@@ -165,18 +221,15 @@ export function CanvasStage() {
   }
 
   const finishStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (cropMode) {
+      cropStartRef.current = null
+      releasePointer(event.pointerId)
+      return
+    }
+
     if (!drawingRef.current) return
     drawingRef.current = false
-
-    const canvas = canvasRef.current
-    if (
-      canvas &&
-      typeof canvas.releasePointerCapture === 'function' &&
-      typeof canvas.hasPointerCapture === 'function' &&
-      canvas.hasPointerCapture(event.pointerId)
-    ) {
-      canvas.releasePointerCapture(event.pointerId)
-    }
+    releasePointer(event.pointerId)
 
     const draft = draftRef.current
     draftRef.current = null
@@ -184,20 +237,51 @@ export function CanvasStage() {
     paint()
   }
 
+  const applyCrop = () => {
+    if (!cropRect || cropRect.width < 1 || cropRect.height < 1) return
+    engine.cropDocument(cropRect)
+    setCrop({ active: cropMode, rect: null })
+    onCropComplete?.()
+  }
+
+  const cancelCrop = () => {
+    setCrop({ active: cropMode, rect: null })
+    onCropComplete?.()
+  }
+
   const displayWidth = Math.max(1, Math.round(engine.width * view.zoom))
   const displayHeight = Math.max(1, Math.round(engine.height * view.zoom))
+  const cropReady = cropRect !== null && cropRect.width >= 1 && cropRect.height >= 1
 
   return (
     <div className="flex h-full w-full flex-col gap-2">
-      <ViewControls
-        zoom={view.zoom}
-        canZoomIn={view.canZoomIn}
-        canZoomOut={view.canZoomOut}
-        onZoomIn={view.zoomIn}
-        onZoomOut={view.zoomOut}
-        onFit={handleFit}
-        onActualSize={view.actualSize}
-      />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <ViewControls
+          zoom={view.zoom}
+          canZoomIn={view.canZoomIn}
+          canZoomOut={view.canZoomOut}
+          onZoomIn={view.zoomIn}
+          onZoomOut={view.zoomOut}
+          onFit={handleFit}
+          onActualSize={view.actualSize}
+        />
+        {cropMode ? (
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Crop">
+            <span className="text-sm text-neutral-500">Drag on the canvas to choose an area</span>
+            <button
+              type="button"
+              disabled={!cropReady}
+              onClick={applyCrop}
+              className={ACTION_CLASS}
+            >
+              Apply crop
+            </button>
+            <button type="button" onClick={cancelCrop} className={ACTION_CLASS}>
+              Cancel crop
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       <div
         ref={viewportRef}
@@ -217,7 +301,21 @@ export function CanvasStage() {
             onPointerUp={finishStroke}
             onPointerCancel={finishStroke}
           />
-          {state.operationCount === 0 ? (
+
+          {cropMode && cropRect ? (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute border-2 border-blue-500 bg-blue-500/10"
+              style={{
+                left: cropRect.x * view.zoom,
+                top: cropRect.y * view.zoom,
+                width: cropRect.width * view.zoom,
+                height: cropRect.height * view.zoom,
+              }}
+            />
+          ) : null}
+
+          {state.operationCount === 0 && !cropMode ? (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <p className="rounded bg-white/70 px-3 py-1 text-sm text-neutral-500 dark:bg-neutral-900/70 dark:text-neutral-400">
                 Draw here with the mouse, or use the voice button below

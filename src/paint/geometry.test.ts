@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { centerOf, clamp, distance, fitContain, normalizeRect, radiiOf } from './geometry'
+import {
+  centerOf,
+  clamp,
+  clampRectToBounds,
+  distance,
+  fitContain,
+  normalizeRect,
+  radiiOf,
+} from './geometry'
 
 describe('clamp', () => {
   it('keeps values inside the range', () => {
@@ -59,5 +67,34 @@ describe('fitContain', () => {
 
   it('falls back to the box for a degenerate source', () => {
     expect(fitContain(0, 0, 960, 720)).toEqual({ x: 0, y: 0, width: 960, height: 720 })
+  })
+})
+
+describe('clampRectToBounds', () => {
+  it('clamps a rectangle that starts outside the top-left', () => {
+    expect(clampRectToBounds({ x: -10, y: -10, width: 100, height: 100 }, 960, 720)).toEqual({
+      x: 0,
+      y: 0,
+      width: 90,
+      height: 90,
+    })
+  })
+
+  it('clips a rectangle that extends past the bottom-right', () => {
+    expect(clampRectToBounds({ x: 900, y: 700, width: 200, height: 200 }, 960, 720)).toEqual({
+      x: 900,
+      y: 700,
+      width: 60,
+      height: 20,
+    })
+  })
+
+  it('returns a zero-size rectangle when fully outside', () => {
+    expect(clampRectToBounds({ x: 2000, y: 2000, width: 10, height: 10 }, 960, 720)).toEqual({
+      x: 960,
+      y: 720,
+      width: 0,
+      height: 0,
+    })
   })
 })

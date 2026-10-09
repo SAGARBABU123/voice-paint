@@ -11,8 +11,8 @@ For a production build, see [`RELEASE.md`](./RELEASE.md).
 
 ## Drawing
 
-The document is a fixed 960 × 720 canvas that scales to fit the window. Draw by
-dragging on the canvas with a mouse, finger, or stylus.
+The document starts at 960 × 720 and scales to fit the window. Draw by dragging
+on the canvas with a mouse, finger, or stylus.
 
 **Your work is saved automatically.** The drawing is stored locally with
 IndexedDB and restored when you reopen the app in the same browser. The status
@@ -38,6 +38,14 @@ Use **Open image** to load a PNG or JPEG. The image is scaled to fit inside the
 document, centred, and added as a normal operation — so it can be undone,
 redone, erased, and is saved with your project. Transparent areas show the white
 background.
+
+## Document transforms
+
+- **Rotate** the whole document left or right in 90° steps.
+- **Resize** to explicit pixel dimensions (the drawing is scaled to fit).
+- **Crop**: choose **Crop**, drag an area on the canvas, then **Apply crop**.
+
+Every transform is recorded in history, so undo/redo works across them.
 
 ## Zoom and pan
 

@@ -9,7 +9,10 @@ import { StatusBar } from './StatusBar'
 
 export function EditorShell() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [cropMode, setCropMode] = useState(false)
   const toggleShortcuts = useCallback(() => setShortcutsOpen((open) => !open), [])
+  const toggleCrop = useCallback(() => setCropMode((enabled) => !enabled), [])
+  const exitCrop = useCallback(() => setCropMode(false), [])
   const persistence = useProjectPersistence()
 
   useKeyboardShortcuts({ onToggleShortcuts: toggleShortcuts })
@@ -31,10 +34,10 @@ export function EditorShell() {
         </button>
       </header>
 
-      <Toolbar />
+      <Toolbar cropMode={cropMode} onToggleCrop={toggleCrop} />
 
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-4">
-        <CanvasStage />
+        <CanvasStage cropMode={cropMode} onCropComplete={exitCrop} />
       </main>
 
       {shortcutsOpen ? (

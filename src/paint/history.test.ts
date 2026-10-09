@@ -83,4 +83,14 @@ describe('History', () => {
     expect(history.appliedCount).toBe(2)
     expect(history.canRedo).toBe(false)
   })
+
+  it('exposes the last applied entry without allocating', () => {
+    const history = new History<string>()
+    expect(history.last).toBeUndefined()
+    history.push('a')
+    history.push('b')
+    expect(history.last).toBe('b')
+    history.undo()
+    expect(history.last).toBe('a')
+  })
 })

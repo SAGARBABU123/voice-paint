@@ -53,6 +53,18 @@ describe('useProjectPersistence', () => {
     expect(engine.getOperations()[0]?.id).toBe('saved')
   })
 
+  it('restores the saved document dimensions', async () => {
+    const store = new MemoryProjectStore()
+    await store.save({ version: 1, width: 480, height: 360, operations: [stroke('saved')] })
+
+    const { engine } = setup(store)
+    await flush()
+
+    await waitFor(() => expect(engine.getSnapshot().operationCount).toBe(1))
+    expect(engine.width).toBe(480)
+    expect(engine.height).toBe(360)
+  })
+
   it('autosaves changes after the debounce delay', async () => {
     const store = new MemoryProjectStore()
     const { engine, view } = setup(store)
@@ -74,7 +86,7 @@ describe('useProjectPersistence', () => {
     await store.save({ version: 1, width: 960, height: 720, operations: [stroke('saved')] })
 
     const engine = new PaintEngine()
-    engine.loadOperations([stroke('local')])
+    engine.loadDocument(960, 720, [stroke('local')])
     setup(store, engine)
     await flush()
 

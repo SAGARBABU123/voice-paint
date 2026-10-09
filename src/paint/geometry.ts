@@ -44,3 +44,12 @@ export function fitContain(
   const height = sourceHeight * scale
   return { x: (boxWidth - width) / 2, y: (boxHeight - height) / 2, width, height }
 }
+
+/** Clamps a rectangle so it lies inside a `width` x `height` document. */
+export function clampRectToBounds(rect: Rect, width: number, height: number): Rect {
+  const x = clamp(rect.x, 0, width)
+  const y = clamp(rect.y, 0, height)
+  const maxX = clamp(rect.x + rect.width, 0, width)
+  const maxY = clamp(rect.y + rect.height, 0, height)
+  return { x, y, width: Math.max(0, maxX - x), height: Math.max(0, maxY - y) }
+}

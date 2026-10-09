@@ -24,6 +24,11 @@ export class History<T> {
     return this.entries.slice(0, this.index)
   }
 
+  /** The most recently applied entry, without allocating, or undefined. */
+  get last(): T | undefined {
+    return this.index > 0 ? this.entries[this.index - 1] : undefined
+  }
+
   get appliedCount(): number {
     return this.index
   }
