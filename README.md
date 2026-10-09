@@ -19,9 +19,9 @@ Both are locked decisions — do not change them silently.
 | M4 — Release          | Docs, CI, static deploy                       | ✅ Done |
 
 **Post-MVP (P1):** Phase 5 — local project persistence ✅. Phase 6 — image import
-· view controls ✅. Phase 7 — document transforms ✅ (rotate, crop, resize; all
-undoable). Phase 8 — text, fill, and selection/move ✅ (all undoable). Next:
-Phase 9 — recent colours, palette polish, cross-browser E2E.
+· view controls ✅. Phase 7 — document transforms ✅. Phase 8 — text, fill, and
+selection/move ✅. Phase 9 — recent colours, palette polish, and cross-browser E2E
+✅. Post-MVP P1 scope is complete.
 
 ## Stack (locked)
 
@@ -46,9 +46,10 @@ Vitest + React Testing Library · ESLint + Prettier · no backend.
 ## Testing
 
 - **Unit / component:** Vitest + React Testing Library (`npm run test:run`).
-- **End-to-end:** Playwright against the production build (`npm run test:e2e`).
-  Install browsers once with `npx playwright install chromium` (on a fresh Linux
-  host you may also need `npx playwright install-deps chromium`).
+- **End-to-end:** Playwright against the production build, across Chromium,
+  Firefox, and WebKit (`npm run test:e2e`). Install browsers once with
+  `npx playwright install chromium firefox webkit` (on a fresh Linux host you may
+  also need `npx playwright install-deps`).
 
 ## Keyboard shortcuts
 

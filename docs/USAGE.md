@@ -29,7 +29,9 @@ bar shows `Saving…` / `Saved`. Nothing is sent to a server.
 | Fill      | Flood-fills a contiguous area in the active colour |
 | Select    | Marquee-selects a region; drag inside to move it   |
 
-- **Colour** — pick a palette swatch or use the custom colour input.
+- **Colour** — pick a palette swatch, a recent swatch, or use the custom colour
+  input. The current colour is shown beside the palette, and recent colours are
+  remembered in this browser.
 - **Brush size** — drag the slider (1–64 px).
 - **Undo / Redo** — step through supported operations.
 - **Clear** — empties the canvas after a confirmation prompt.

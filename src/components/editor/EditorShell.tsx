@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useProjectPersistence } from '../../hooks/useProjectPersistence'
+import { useRecordRecentColor } from '../../hooks/useRecentColors'
 import { CanvasStage } from '../canvas/CanvasStage'
 import { Toolbar } from '../toolbar/Toolbar'
 import { VoicePanel } from '../voice/VoicePanel'
@@ -16,6 +17,7 @@ export function EditorShell() {
   const persistence = useProjectPersistence()
 
   useKeyboardShortcuts({ onToggleShortcuts: toggleShortcuts })
+  useRecordRecentColor()
 
   return (
     <div className="flex h-screen flex-col bg-neutral-100 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">

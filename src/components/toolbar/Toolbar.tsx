@@ -1,5 +1,6 @@
 import { useRef, type ButtonHTMLAttributes, type ChangeEvent } from 'react'
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
+import { useRecentColors } from '../../hooks/useRecentColors'
 import {
   COLOR_PALETTE,
   MAX_BRUSH_SIZE,
@@ -49,6 +50,7 @@ export function Toolbar({ cropMode = false, onToggleCrop }: ToolbarProps = {}) {
   const state = usePaintSnapshot()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const isTextTool = state.activeTool === 'text'
+  const { colors: recentColors, clear: clearRecentColors } = useRecentColors()
 
   const handleClear = () => {
     if (state.operationCount === 0) return
@@ -105,6 +107,13 @@ export function Toolbar({ cropMode = false, onToggleCrop }: ToolbarProps = {}) {
 
       <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Colors">
         <span className="text-xs font-medium text-neutral-500">Color</span>
+        <span
+          role="img"
+          aria-label={`Current color ${state.color}`}
+          title={`Current color: ${state.color}`}
+          className="size-6 rounded-full border-2 border-neutral-400"
+          style={{ backgroundColor: state.color }}
+        />
         {COLOR_PALETTE.map((color) => (
           <button
             key={color}
@@ -125,6 +134,32 @@ export function Toolbar({ cropMode = false, onToggleCrop }: ToolbarProps = {}) {
           onChange={(event) => engine.setColor(event.target.value)}
         />
       </div>
+
+      {recentColors.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Recent colors">
+          <span className="text-xs font-medium text-neutral-500">Recent</span>
+          {recentColors.map((color) => (
+            <button
+              key={color}
+              type="button"
+              aria-label={`Use recent color ${color}`}
+              aria-pressed={state.color === color}
+              title={color}
+              className="size-6 rounded-full border border-neutral-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 aria-pressed:ring-2 aria-pressed:ring-blue-500 aria-pressed:ring-offset-1"
+              style={{ backgroundColor: color }}
+              onClick={() => engine.setColor(color)}
+            />
+          ))}
+          <button
+            type="button"
+            aria-label="Clear recent colors"
+            onClick={clearRecentColors}
+            className="rounded text-xs text-neutral-500 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          >
+            Clear
+          </button>
+        </div>
+      ) : null}
 
       <div
         className="flex flex-wrap items-center gap-3"

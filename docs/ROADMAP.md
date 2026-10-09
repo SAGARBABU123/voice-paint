@@ -45,4 +45,6 @@ limitations, passing quality gates.
 - **Phase 7 — Document transforms ✅** — rotate, crop, and resize (all undoable).
 - **Phase 8 — Text, fill, selection/move ✅** — text placement with font size,
   flood fill, and rectangular marquee move/cut (all undoable).
-- **Phase 9 — Recent colours, palette polish, cross-browser E2E.**
+- **Phase 9 — Recent colours, palette polish, cross-browser E2E ✅** — recent
+  swatches (persisted locally), a current-colour chip, and Playwright projects
+  for Chromium, Firefox, and WebKit.

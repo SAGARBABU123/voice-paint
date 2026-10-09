@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PaintEngineProvider } from '../../hooks/PaintProvider'
+import { getRecentColorsStore } from '../../hooks/useRecentColors'
 import { PaintEngine } from '../../paint/engine'
 import type { StrokeOperation } from '../../paint/types'
 import { Toolbar } from './Toolbar'
@@ -31,6 +32,10 @@ function renderToolbar() {
 }
 
 describe('Toolbar', () => {
+  beforeEach(() => {
+    act(() => getRecentColorsStore().clear())
+  })
+
   it('selects a tool and reflects it with aria-pressed', async () => {
     const user = userEvent.setup()
     const engine = renderToolbar()
@@ -140,5 +145,17 @@ describe('Toolbar', () => {
     fireEvent.change(screen.getByLabelText('Font size'), { target: { value: '48' } })
 
     expect(engine.getSnapshot().fontSize).toBe(48)
+  })
+
+  it('shows recent colours, selects them, and clears the list', async () => {
+    const user = userEvent.setup()
+    const engine = renderToolbar()
+    act(() => getRecentColorsStore().remember('#123456'))
+
+    await user.click(screen.getByRole('button', { name: 'Use recent color #123456' }))
+    expect(engine.getSnapshot().color).toBe('#123456')
+
+    await user.click(screen.getByRole('button', { name: 'Clear recent colors' }))
+    expect(screen.queryByRole('button', { name: 'Use recent color #123456' })).toBeNull()
   })
 })

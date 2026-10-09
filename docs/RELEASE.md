@@ -26,8 +26,9 @@ client-side routing, no rewrite/redirect rules are needed.
 request:
 
 1. **quality** — `npm ci`, typecheck, lint, format check, unit tests, build.
-2. **e2e** — installs Chromium, builds, and runs the Playwright suite; uploads
-   the HTML report as an artifact.
+2. **e2e** — installs Chromium, Firefox, and WebKit, builds, and runs the
+   Playwright suite across all three browsers; uploads the HTML report as an
+   artifact.
 
 ## Pre-release checklist
 
