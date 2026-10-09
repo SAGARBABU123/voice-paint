@@ -12,6 +12,13 @@ export type UseVoiceCommandsOptions = {
   adapter?: SpeechRecognitionAdapter
 }
 
+/**
+ * Final transcripts below this confidence are not executed. Some browsers
+ * report 0 when they have no confidence estimate, in which case we accept the
+ * result rather than blocking the user.
+ */
+const MIN_CONFIDENCE = 0.5
+
 export type VoiceCommandController = {
   supported: boolean
   status: SpeechRecognitionStatus
@@ -124,7 +131,12 @@ export function useVoiceCommands(options: UseVoiceCommandsOptions = {}): VoiceCo
       onStart: () => setStatus('listening'),
       onResult: (result) => {
         setTranscript(result.transcript)
-        if (result.isFinal) handleFinalTranscript(result.transcript)
+        if (!result.isFinal) return
+        if (result.confidence > 0 && result.confidence < MIN_CONFIDENCE) {
+          setMessage(`I am not sure I heard that ("${result.transcript}"). Please try again.`)
+          return
+        }
+        handleFinalTranscript(result.transcript)
       },
       onError: (code, text) => {
         setStatus(code === 'not-allowed' || code === 'service-not-allowed' ? 'denied' : 'error')

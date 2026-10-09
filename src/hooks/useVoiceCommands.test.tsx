@@ -71,6 +71,18 @@ describe('useVoiceCommands', () => {
     expect(engine.getSnapshot().activeTool).toBe('pencil')
   })
 
+  it('does not execute a low-confidence final result', async () => {
+    const { engine, view, emitResult } = setup()
+    act(() => view.result.current.start())
+
+    await act(async () => {
+      emitResult('use rectangle', true, 0.2)
+    })
+
+    expect(engine.getSnapshot().activeTool).toBe('pencil')
+    expect(view.result.current.message).toMatch(/not sure/i)
+  })
+
   it('does not change the canvas for unknown phrases', async () => {
     const { engine, view, emitResult } = setup()
     act(() => view.result.current.start())
