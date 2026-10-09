@@ -33,4 +33,11 @@ describe('App', () => {
     expect(screen.getByText(/draw here with the mouse/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /shortcuts/i })).toBeInTheDocument()
   })
+
+  it('exposes image import and view controls', async () => {
+    await renderApp()
+    expect(screen.getByRole('button', { name: /open image/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Zoom in' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Fit to window' })).toBeInTheDocument()
+  })
 })

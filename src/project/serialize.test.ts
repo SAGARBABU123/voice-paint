@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { PaintEngine } from '../paint/engine'
 import type { StrokeOperation } from '../paint/types'
 import { createSnapshot, isProjectSnapshot } from './serialize'
-
 function stroke(id = 'a'): StrokeOperation {
   return {
     id,
@@ -49,6 +48,20 @@ describe('isProjectSnapshot', () => {
   it('accepts a valid snapshot', () => {
     const engine = new PaintEngine()
     engine.commit(stroke())
+    expect(isProjectSnapshot(createSnapshot(engine))).toBe(true)
+  })
+
+  it('accepts a snapshot containing an imported image', () => {
+    const engine = new PaintEngine()
+    engine.commit({
+      id: 'i',
+      kind: 'image',
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+      dataUrl: 'data:image/png;base64,AAAA',
+    })
     expect(isProjectSnapshot(createSnapshot(engine))).toBe(true)
   })
 

@@ -18,11 +18,21 @@ const shape = {
   start: { x: 0, y: 0 },
   end: { x: 1, y: 1 },
 }
+const image = {
+  id: 'c',
+  kind: 'image',
+  x: 0,
+  y: 0,
+  width: 10,
+  height: 10,
+  dataUrl: 'data:image/png;base64,AAAA',
+}
 
 describe('isPaintOperation', () => {
-  it('accepts valid strokes and shapes', () => {
+  it('accepts valid strokes, shapes and images', () => {
     expect(isPaintOperation(stroke)).toBe(true)
     expect(isPaintOperation(shape)).toBe(true)
+    expect(isPaintOperation(image)).toBe(true)
   })
 
   it.each([
@@ -32,6 +42,8 @@ describe('isPaintOperation', () => {
     ['an unknown shape tool', { ...shape, tool: 'triangle' }],
     ['an unknown kind', { ...stroke, kind: 'blob' }],
     ['a non-numeric size', { ...stroke, size: 'big' }],
+    ['an image without a size', { ...image, width: 'wide' }],
+    ['an image with a non-image data URL', { ...image, dataUrl: 'https://example.com/x.png' }],
   ])('rejects %s', (_label, value) => {
     expect(isPaintOperation(value)).toBe(false)
   })

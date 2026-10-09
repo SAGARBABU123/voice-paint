@@ -2,8 +2,23 @@ import { BACKGROUND_COLOR } from './constants'
 import { centerOf, normalizeRect, radiiOf } from './geometry'
 import type { PaintOperation } from './types'
 
+/** Resolves a stored image data URL to something drawable (or null if not ready). */
+export type ImageResolver = (dataUrl: string) => CanvasImageSource | null
+
 /** Draws a single operation onto a 2D context, in document pixel coordinates. */
-export function renderOperation(ctx: CanvasRenderingContext2D, operation: PaintOperation): void {
+export function renderOperation(
+  ctx: CanvasRenderingContext2D,
+  operation: PaintOperation,
+  resolveImage?: ImageResolver,
+): void {
+  if (operation.kind === 'image') {
+    const source = resolveImage?.(operation.dataUrl) ?? null
+    if (source) {
+      ctx.drawImage(source, operation.x, operation.y, operation.width, operation.height)
+    }
+    return
+  }
+
   ctx.save()
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
@@ -52,28 +67,39 @@ export function renderOperation(ctx: CanvasRenderingContext2D, operation: PaintO
   ctx.restore()
 }
 
+export type RenderSceneOptions = {
+  width: number
+  height: number
+  operations: readonly PaintOperation[]
+  preview?: PaintOperation | null
+  background?: string
+  resolveImage?: ImageResolver
+}
+
 /**
  * Repaints the whole document: opaque background, committed operations, then an
  * optional live preview operation (the in-progress stroke/shape).
  */
-export function renderScene(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  operations: readonly PaintOperation[],
-  preview: PaintOperation | null = null,
-  background: string = BACKGROUND_COLOR,
-): void {
+export function renderScene(ctx: CanvasRenderingContext2D, options: RenderSceneOptions): void {
+  const {
+    width,
+    height,
+    operations,
+    preview = null,
+    background = BACKGROUND_COLOR,
+    resolveImage,
+  } = options
+
   ctx.save()
   ctx.clearRect(0, 0, width, height)
   ctx.fillStyle = background
   ctx.fillRect(0, 0, width, height)
 
   for (const operation of operations) {
-    renderOperation(ctx, operation)
+    renderOperation(ctx, operation, resolveImage)
   }
   if (preview) {
-    renderOperation(ctx, preview)
+    renderOperation(ctx, preview, resolveImage)
   }
 
   ctx.restore()

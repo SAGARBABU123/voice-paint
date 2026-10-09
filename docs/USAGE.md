@@ -32,6 +32,20 @@ bar shows `Saving…` / `Saved`. Nothing is sent to a server.
 - **Clear** — empties the canvas after a confirmation prompt.
 - **Export PNG** — downloads the artwork as `voice-over-paint.png`.
 
+## Importing images
+
+Use **Open image** to load a PNG or JPEG. The image is scaled to fit inside the
+document, centred, and added as a normal operation — so it can be undone,
+redone, erased, and is saved with your project. Transparent areas show the white
+background.
+
+## Zoom and pan
+
+The view controls above the canvas let you **zoom out/in**, **Fit** the whole
+document to the window, or return to **1:1** actual size. When the document is
+larger than the viewport, pan by scrolling (or with the scrollbars). Hold
+`Ctrl`/`Cmd` and scroll to zoom.
+
 ## Voice commands
 
 1. Press **Start voice control** and allow microphone access.

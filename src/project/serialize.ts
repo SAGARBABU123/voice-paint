@@ -7,7 +7,10 @@ function cloneOperation(operation: PaintOperation): PaintOperation {
   if (operation.kind === 'stroke') {
     return { ...operation, points: operation.points.map((point) => ({ ...point })) }
   }
-  return { ...operation, start: { ...operation.start }, end: { ...operation.end } }
+  if (operation.kind === 'shape') {
+    return { ...operation, start: { ...operation.start }, end: { ...operation.end } }
+  }
+  return { ...operation }
 }
 
 /** Produces a deep, serialisable copy of the current document. */

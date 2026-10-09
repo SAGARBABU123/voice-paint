@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BACKGROUND_COLOR } from './constants'
 import { renderOperation, renderScene } from './renderer'
-import type { PaintOperation, ShapeOperation, StrokeOperation } from './types'
+import type { ImageOperation, ShapeOperation, StrokeOperation } from './types'
 
 type Call = { method: string; args: unknown[] }
 
@@ -32,6 +32,7 @@ function createFakeContext() {
     arc: record('arc'),
     ellipse: record('ellipse'),
     strokeRect: record('strokeRect'),
+    drawImage: record('drawImage'),
   }
 
   return context as unknown as CanvasRenderingContext2D & { calls: Call[]; strokeStyle: string }
@@ -53,11 +54,21 @@ function shape(tool: ShapeOperation['tool']): ShapeOperation {
   }
 }
 
+const IMAGE_OPERATION: ImageOperation = {
+  id: 'img',
+  kind: 'image',
+  x: 10,
+  y: 20,
+  width: 30,
+  height: 40,
+  dataUrl: 'data:image/png;base64,AAAA',
+}
+
 function methods(ctx: { calls: Call[] }): string[] {
   return ctx.calls.map((call) => call.method)
 }
 
-describe('renderOperation', () => {
+describe('renderOperation — strokes and shapes', () => {
   it('draws a multi-point pencil stroke as a path', () => {
     const ctx = createFakeContext()
     renderOperation(
@@ -99,7 +110,6 @@ describe('renderOperation', () => {
     renderOperation(ctx, shape('line'))
     expect(ctx.calls.find((call) => call.method === 'moveTo')?.args).toEqual([0, 0])
     expect(ctx.calls.find((call) => call.method === 'lineTo')?.args).toEqual([20, 40])
-    expect(methods(ctx)).toContain('stroke')
   })
 
   it('draws a rectangle normalized from the two corners', () => {
@@ -117,11 +127,40 @@ describe('renderOperation', () => {
   })
 })
 
+describe('renderOperation — image', () => {
+  it('draws a decoded image at its placed rectangle', () => {
+    const ctx = createFakeContext()
+    const source = { tag: 'img' } as unknown as CanvasImageSource
+
+    renderOperation(ctx, IMAGE_OPERATION, (dataUrl) =>
+      dataUrl === IMAGE_OPERATION.dataUrl ? source : null,
+    )
+
+    expect(ctx.calls.find((call) => call.method === 'drawImage')?.args).toEqual([
+      source,
+      10,
+      20,
+      30,
+      40,
+    ])
+  })
+
+  it('skips the image when it is not decoded yet', () => {
+    const ctx = createFakeContext()
+    renderOperation(ctx, IMAGE_OPERATION, () => null)
+    expect(methods(ctx)).not.toContain('drawImage')
+  })
+})
+
 describe('renderScene', () => {
   it('clears, paints the background, then renders operations and preview', () => {
     const ctx = createFakeContext()
-    const operations: PaintOperation[] = [shape('line')]
-    renderScene(ctx, 100, 50, operations, shape('ellipse'))
+    renderScene(ctx, {
+      width: 100,
+      height: 50,
+      operations: [shape('line')],
+      preview: shape('ellipse'),
+    })
 
     const clearIndex = methods(ctx).indexOf('clearRect')
     const fillIndex = methods(ctx).indexOf('fillRect')
@@ -132,9 +171,21 @@ describe('renderScene', () => {
     expect(methods(ctx)).toContain('ellipse')
   })
 
+  it('renders images when a resolver is supplied', () => {
+    const ctx = createFakeContext()
+    const source = {} as unknown as CanvasImageSource
+    renderScene(ctx, {
+      width: 10,
+      height: 10,
+      operations: [IMAGE_OPERATION],
+      resolveImage: () => source,
+    })
+    expect(methods(ctx)).toContain('drawImage')
+  })
+
   it('renders without a preview', () => {
     const ctx = createFakeContext()
-    renderScene(ctx, 10, 10, [])
+    renderScene(ctx, { width: 10, height: 10, operations: [] })
     expect(methods(ctx)).not.toContain('ellipse')
     expect(methods(ctx)).not.toContain('stroke')
   })

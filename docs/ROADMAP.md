@@ -42,5 +42,7 @@ limitations, passing quality gates.
   IndexedDB.
 - **Phase 6 — Image import & view controls** — open PNG/JPEG, zoom, pan, crop,
   rotate, resize.
+- **Phase 6 — Image import & view controls ✅** — open PNG/JPEG (scaled to fit),
+  zoom, pan, fit, actual size.
 - **Phase 7 — Text, fill, selection/move.**
 - **Phase 8 — Recent colours, palette polish, cross-browser E2E.**

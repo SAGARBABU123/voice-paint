@@ -33,4 +33,19 @@ export type ShapeOperation = {
   end: Point
 }
 
-export type PaintOperation = StrokeOperation | ShapeOperation
+/** A raster imported from a file, positioned and scaled in document space. */
+export type ImageOperation = {
+  id: string
+  kind: 'image'
+  x: number
+  y: number
+  width: number
+  height: number
+  dataUrl: string
+}
+
+export type PaintOperation = StrokeOperation | ShapeOperation | ImageOperation
+
+export function isImageOperation(operation: PaintOperation): operation is ImageOperation {
+  return operation.kind === 'image'
+}

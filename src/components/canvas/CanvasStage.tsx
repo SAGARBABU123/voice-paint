@@ -1,22 +1,34 @@
-import { useCallback, useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
+import { useViewport } from '../../hooks/useViewport'
 import { clientToDocumentPoint } from '../../paint/coordinates'
 import { distance } from '../../paint/geometry'
 import { createId } from '../../paint/id'
+import { getCachedImage, preloadImages } from '../../paint/imageCache'
 import { renderScene } from '../../paint/renderer'
-import { isStrokeTool, type PaintOperation, type Point } from '../../paint/types'
+import { isImageOperation, isStrokeTool, type PaintOperation, type Point } from '../../paint/types'
+import { ViewControls } from './ViewControls'
 
 const MIN_POINT_DISTANCE = 1
 
 /**
- * The canvas workspace. It owns pointer input mapping and delegates all state
- * to the shared PaintEngine, so toolbar and (later) voice actions share one path.
+ * The canvas workspace. It owns pointer input mapping and view zoom, and
+ * delegates all document state to the shared PaintEngine.
  */
 export function CanvasStage() {
   const engine = usePaintEngine()
   const state = usePaintSnapshot()
+  const view = useViewport({ documentWidth: engine.width, documentHeight: engine.height })
+  const { fit, zoomIn, zoomOut } = view
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const viewportRef = useRef<HTMLDivElement | null>(null)
   const contextRef = useRef<CanvasRenderingContext2D | null>(null)
   const draftRef = useRef<PaintOperation | null>(null)
   const drawingRef = useRef(false)
@@ -24,14 +36,14 @@ export function CanvasStage() {
   const paint = useCallback(() => {
     const context = contextRef.current
     if (!context) return
-    renderScene(
-      context,
-      engine.width,
-      engine.height,
-      engine.getOperations(),
-      draftRef.current,
-      engine.background,
-    )
+    renderScene(context, {
+      width: engine.width,
+      height: engine.height,
+      operations: engine.getOperations(),
+      preview: draftRef.current,
+      background: engine.background,
+      resolveImage: getCachedImage,
+    })
   }, [engine])
 
   useEffect(() => {
@@ -46,9 +58,52 @@ export function CanvasStage() {
     }
   }, [engine, paint])
 
+  // Decode any newly imported images before repainting.
   useEffect(() => {
-    paint()
-  }, [paint, state.revision])
+    const pending = engine
+      .getOperations()
+      .filter(isImageOperation)
+      .map((operation) => operation.dataUrl)
+      .filter((dataUrl) => getCachedImage(dataUrl) === null)
+
+    if (pending.length === 0) {
+      paint()
+      return
+    }
+
+    let cancelled = false
+    void preloadImages(pending).then(() => {
+      if (!cancelled) paint()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [engine, paint, state.revision])
+
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport) return
+    fit(viewport.clientWidth, viewport.clientHeight)
+  }, [fit])
+
+  useEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport) return
+    const handleWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return
+      event.preventDefault()
+      if (event.deltaY < 0) zoomIn()
+      else zoomOut()
+    }
+    viewport.addEventListener('wheel', handleWheel, { passive: false })
+    return () => viewport.removeEventListener('wheel', handleWheel)
+  }, [zoomIn, zoomOut])
+
+  const handleFit = useCallback(() => {
+    const viewport = viewportRef.current
+    if (!viewport) return
+    fit(viewport.clientWidth, viewport.clientHeight)
+  }, [fit])
 
   const toDocumentPoint = (event: ReactPointerEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current
@@ -103,7 +158,7 @@ export function CanvasStage() {
       const previous = draft.points[draft.points.length - 1]
       if (previous && distance(previous, point) < MIN_POINT_DISTANCE) return
       draft.points.push(point)
-    } else {
+    } else if (draft.kind === 'shape') {
       draft.end = point
     }
     paint()
@@ -129,27 +184,48 @@ export function CanvasStage() {
     paint()
   }
 
+  const displayWidth = Math.max(1, Math.round(engine.width * view.zoom))
+  const displayHeight = Math.max(1, Math.round(engine.height * view.zoom))
+
   return (
-    <div className="relative w-full max-w-[960px]">
-      <canvas
-        ref={canvasRef}
-        width={engine.width}
-        height={engine.height}
-        className="h-auto w-full cursor-crosshair touch-none rounded-lg border border-neutral-300 bg-white shadow-sm dark:border-neutral-700"
-        role="img"
-        aria-label="Drawing canvas"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={finishStroke}
-        onPointerCancel={finishStroke}
+    <div className="flex h-full w-full flex-col gap-2">
+      <ViewControls
+        zoom={view.zoom}
+        canZoomIn={view.canZoomIn}
+        canZoomOut={view.canZoomOut}
+        onZoomIn={view.zoomIn}
+        onZoomOut={view.zoomOut}
+        onFit={handleFit}
+        onActualSize={view.actualSize}
       />
-      {state.operationCount === 0 ? (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <p className="rounded bg-white/70 px-3 py-1 text-sm text-neutral-500 dark:bg-neutral-900/70 dark:text-neutral-400">
-            Draw here with the mouse, or use the voice button below
-          </p>
+
+      <div
+        ref={viewportRef}
+        className="relative flex-1 overflow-auto rounded-lg border border-neutral-300 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900"
+      >
+        <div className="relative" style={{ width: displayWidth, height: displayHeight }}>
+          <canvas
+            ref={canvasRef}
+            width={engine.width}
+            height={engine.height}
+            style={{ width: displayWidth, height: displayHeight }}
+            className="block cursor-crosshair touch-none bg-white shadow-sm"
+            role="img"
+            aria-label="Drawing canvas"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={finishStroke}
+            onPointerCancel={finishStroke}
+          />
+          {state.operationCount === 0 ? (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <p className="rounded bg-white/70 px-3 py-1 text-sm text-neutral-500 dark:bg-neutral-900/70 dark:text-neutral-400">
+                Draw here with the mouse, or use the voice button below
+              </p>
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      </div>
     </div>
   )
 }

@@ -1,6 +1,8 @@
-import type { ButtonHTMLAttributes } from 'react'
+import { useRef, type ButtonHTMLAttributes, type ChangeEvent } from 'react'
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
 import { COLOR_PALETTE, MAX_BRUSH_SIZE, MIN_BRUSH_SIZE } from '../../paint/constants'
+import { createImageOperation, readFileAsDataUrl } from '../../paint/image'
+import { loadImage } from '../../paint/imageCache'
 import { PAINT_TOOLS, type PaintTool } from '../../paint/types'
 import { TOOL_LABELS } from '../toolLabels'
 
@@ -30,6 +32,7 @@ function ActionButton(props: ButtonHTMLAttributes<HTMLButtonElement>) {
 export function Toolbar() {
   const engine = usePaintEngine()
   const state = usePaintSnapshot()
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const handleClear = () => {
     if (state.operationCount === 0) return
@@ -41,6 +44,29 @@ export function Toolbar() {
     void engine.exportPng().catch(() => {
       window.alert('Export is not available in this browser.')
     })
+  }
+
+  const handleImageFile = async (file: File) => {
+    try {
+      const dataUrl = await readFileAsDataUrl(file)
+      const image = await loadImage(dataUrl)
+      const operation = createImageOperation(
+        dataUrl,
+        image.naturalWidth || image.width,
+        image.naturalHeight || image.height,
+        engine.width,
+        engine.height,
+      )
+      engine.commit(operation)
+    } catch {
+      window.alert('Could not open that image. Please choose a PNG or JPEG file.')
+    }
+  }
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (file) void handleImageFile(file)
   }
 
   return (
@@ -132,12 +158,26 @@ export function Toolbar() {
           Clear
         </ActionButton>
         <ActionButton
+          title="Open a PNG or JPEG image"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          Open image
+        </ActionButton>
+        <ActionButton
           aria-keyshortcuts="Control+S"
           title="Export PNG (Ctrl/Cmd+S)"
           onClick={handleExport}
         >
           Export PNG
         </ActionButton>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg"
+          aria-label="Choose image file"
+          className="hidden"
+          onChange={handleFileChange}
+        />
       </div>
     </div>
   )

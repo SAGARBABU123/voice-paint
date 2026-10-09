@@ -19,7 +19,8 @@ Both are locked decisions — do not change them silently.
 | M4 — Release          | Docs, CI, static deploy                       | ✅ Done |
 
 **Post-MVP (P1):** Phase 5 — local project persistence ✅ (IndexedDB autosave &
-restore). Next: image import + view controls, text/fill, recent colours,
+restore). Phase 6 — image import + view controls ✅ (open PNG/JPEG, zoom, pan,
+fit). Next: text/fill/selection, document transforms, recent colours,
 cross-browser E2E.
 
 ## Stack (locked)
@@ -75,8 +76,9 @@ The build is a fully static site — no backend, database, or secrets. Run
 
 - Voice depends on the browser Web Speech API and a secure context; it is best
   supported in Chrome/Edge and unavailable in Firefox. Manual drawing always works.
-- No image import/open yet (PNG export only), no transparency, and no layers,
-  text, or filters.
+- **Open image** imports PNG/JPEG scaled to fit; there is no transparency (it
+  composites onto white), and no layers, text, crop, rotate, or resize yet
+  (zoom/pan are supported).
 - The eraser paints the background colour; **Clear is not undoable** (it is
   confirmed first).
 - Voice uses a fixed grammar with no natural-language understanding; unknown

@@ -28,3 +28,19 @@ export function radiiOf(start: Point, end: Point): Point {
   const rect = normalizeRect(start, end)
   return { x: rect.width / 2, y: rect.height / 2 }
 }
+
+/** Scales a source to fit ("contain") inside a box, centred, preserving aspect ratio. */
+export function fitContain(
+  sourceWidth: number,
+  sourceHeight: number,
+  boxWidth: number,
+  boxHeight: number,
+): Rect {
+  if (sourceWidth <= 0 || sourceHeight <= 0) {
+    return { x: 0, y: 0, width: boxWidth, height: boxHeight }
+  }
+  const scale = Math.min(boxWidth / sourceWidth, boxHeight / sourceHeight)
+  const width = sourceWidth * scale
+  const height = sourceHeight * scale
+  return { x: (boxWidth - width) / 2, y: (boxHeight - height) / 2, width, height }
+}
