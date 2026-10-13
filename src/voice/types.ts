@@ -1,4 +1,5 @@
 import type { ShapePlacement } from '../paint/placement'
+import type { SketchDetail, SketchStyle, SketchWeight } from '../paint/sketchStyles'
 import type { PaintTool, ShapeTool } from '../paint/types'
 
 /**
@@ -16,6 +17,9 @@ export type PaintCommand =
   | { type: 'history.redo' }
   | { type: 'canvas.clear' }
   | { type: 'canvas.export'; format: 'png' }
+  | { type: 'sketch.style.set'; style: SketchStyle }
+  | { type: 'sketch.weight.set'; weight: SketchWeight }
+  | { type: 'sketch.detail.set'; detail: SketchDetail }
   | { type: 'help.open' }
 
 export type ParseFailureReason = 'unknown' | 'ambiguous' | 'missing_parameter'

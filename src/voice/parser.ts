@@ -1,6 +1,15 @@
 import { isShapeTool, type PaintTool } from '../paint/types'
 import type { ShapePlacement } from '../paint/placement'
-import { COLOR_NAMES, TOOL_ALIASES } from './grammar'
+import {
+  COLOR_NAMES,
+  SKETCH_DARKER_WORDS,
+  SKETCH_LIGHTER_WORDS,
+  SKETCH_MORE_DETAIL,
+  SKETCH_SIMPLER,
+  SKETCH_STYLE_ALIASES,
+  SKETCH_WORDS,
+  TOOL_ALIASES,
+} from './grammar'
 import type { CommandParseResult, ParseFailureReason, PaintCommand } from './types'
 
 const SIZE_WORDS = ['size', 'width'] as const
@@ -193,6 +202,51 @@ function parseClause(text: string): CommandParseResult {
 
   if (hasAny(text, UNDO_WORDS)) return ok([{ type: 'history.undo' }])
   if (hasAny(text, REDO_WORDS)) return ok([{ type: 'history.redo' }])
+
+  // Photo-sketch pencils: "sketch it in charcoal", "sketch it darker",
+  // "sketch it with more detail". Configure the next Write image… conversion.
+  // Scoped synonyms (thicker/thinner) must be checked here, before the brush
+  // size branches, so they stay sketch-specific.
+  if (hasAny(text, SKETCH_WORDS)) {
+    const commands: PaintCommand[] = []
+
+    // Longest alias first so "colour pencil" wins over bare "pencil".
+    const styleAliases = Object.entries(SKETCH_STYLE_ALIASES).sort(
+      (a, b) => b[0].length - a[0].length,
+    )
+    for (const [alias, style] of styleAliases) {
+      if (text.includes(alias)) {
+        commands.push({ type: 'sketch.style.set', style })
+        break
+      }
+    }
+
+    const darker = hasAny(text, SKETCH_DARKER_WORDS)
+    const lighter = hasAny(text, SKETCH_LIGHTER_WORDS)
+    if (darker && lighter) {
+      return failure('ambiguous', 'Did you mean the sketch lighter or darker? Please say one.')
+    }
+    if (darker) commands.push({ type: 'sketch.weight.set', weight: 'darker' })
+    if (lighter) commands.push({ type: 'sketch.weight.set', weight: 'lighter' })
+
+    // Multi-word fragments ("more detail") can't be matched token-by-token,
+    // so check them as substrings; single words work either way.
+    const moreDetail = SKETCH_MORE_DETAIL.some((fragment) => text.includes(fragment))
+    const simpler = SKETCH_SIMPLER.some((fragment) => text.includes(fragment))
+    if (moreDetail && simpler) {
+      return failure('ambiguous', 'Did you mean more or less detail? Please say one.')
+    }
+    if (moreDetail) commands.push({ type: 'sketch.detail.set', detail: 'more' })
+    if (simpler) commands.push({ type: 'sketch.detail.set', detail: 'simpler' })
+
+    if (commands.length === 0) {
+      return failure(
+        'missing_parameter',
+        'What sketch? Try "sketch it in charcoal", "sketch it darker", or "sketch it with more detail".',
+      )
+    }
+    return ok(commands)
+  }
 
   if (hasAny(text, SMALLER_WORDS)) {
     return ok([{ type: 'brush.size.adjust', direction: 'smaller' }])

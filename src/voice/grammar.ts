@@ -1,3 +1,4 @@
+import type { SketchStyle } from '../paint/sketchStyles'
 import type { PaintTool } from '../paint/types'
 
 /**
@@ -34,6 +35,35 @@ export const TOOL_ALIASES: Readonly<Record<string, PaintTool>> = {
   marquee: 'select',
 }
 
+/** Words that announce a photo-sketch intent. Undefined behavior fails helpfully. */
+export const SKETCH_WORDS = ['sketch', 'trace', 'sketching', 'traced'] as const
+
+/** Spoken pencil style -> SketchStyle (all deterministic presets). */
+export const SKETCH_STYLE_ALIASES: Readonly<Record<string, SketchStyle>> = {
+  charcoal: 'charcoal',
+  pencil: 'pencil',
+  'coloured pencil': 'colour-pencil',
+  'colour pencil': 'colour-pencil',
+  'colored pencil': 'colour-pencil',
+  'coloured pencils': 'colour-pencil',
+  'colour pencils': 'colour-pencil',
+  'colored pencils': 'colour-pencil',
+  ink: 'ink',
+  'ink pen': 'ink',
+  'pen and ink': 'ink',
+  hatch: 'hatch',
+  crosshatch: 'hatch',
+  'cross hatch': 'hatch',
+}
+
+/** Words that make the next sketch read heavier on the sheet. */
+export const SKETCH_DARKER_WORDS = ['darker', 'bolder', 'heavier', 'stronger', 'thicker'] as const
+/** Words that make the next sketch read fainter on the sheet. */
+export const SKETCH_LIGHTER_WORDS = ['lighter', 'fainter', 'softer', 'weaker', 'thinner'] as const
+/** Phrase fragments that request more or less photo detail. */
+export const SKETCH_MORE_DETAIL = ['more detail', 'detailed', 'finest', 'fine detail'] as const
+export const SKETCH_SIMPLER = ['simpler', 'less detail', 'cleaner', 'minimal'] as const
+
 /** Spoken colour name -> hex value accepted by the engine. */
 export const COLOR_NAMES: Readonly<Record<string, string>> = {
   red: '#ef4444',
@@ -69,6 +99,9 @@ export const COMMAND_EXAMPLES: readonly string[] = [
   'set color to red',
   'set brush size to 8',
   'make the brush smaller',
+  'sketch it in charcoal',
+  'sketch it darker',
+  'sketch it with more detail',
   'undo',
   'redo',
   'clear canvas',

@@ -74,6 +74,46 @@ describe('PaintEngine', () => {
     expect(engine.getSnapshot().brushSize).toBe(8)
   })
 
+  it('defaults to the pencil sketch style with normal weight and detail', () => {
+    const engine = new PaintEngine()
+    expect(engine.getSnapshot()).toMatchObject({
+      sketchStyle: 'pencil',
+      sketchWeight: 'normal',
+      sketchDetail: 'normal',
+    })
+  })
+
+  it('sets sketch preferences and ignores unknown ones', () => {
+    const engine = new PaintEngine()
+    engine.setSketchStyle('charcoal')
+    engine.setSketchWeight('darker')
+    engine.setSketchDetail('more')
+    expect(engine.getSnapshot()).toMatchObject({
+      sketchStyle: 'charcoal',
+      sketchWeight: 'darker',
+      sketchDetail: 'more',
+    })
+
+    engine.setSketchStyle('spray' as never)
+    engine.setSketchWeight('gloomy' as never)
+    engine.setSketchDetail('a lot' as never)
+    expect(engine.getSnapshot()).toMatchObject({
+      sketchStyle: 'charcoal',
+      sketchWeight: 'darker',
+      sketchDetail: 'more',
+    })
+  })
+
+  it('does not notify when a sketch preference is unchanged', () => {
+    const engine = new PaintEngine()
+    const listener = vi.fn()
+    engine.subscribe(listener)
+    engine.setSketchStyle('pencil') // same as the default
+    expect(listener).not.toHaveBeenCalled()
+    engine.setSketchStyle('ink')
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
   it('validates and clamps the font size', () => {
     const engine = new PaintEngine()
     expect(engine.getSnapshot().fontSize).toBe(DEFAULT_FONT_SIZE)
@@ -259,6 +299,31 @@ describe('PaintEngine', () => {
   it('cannot export before a canvas is attached', async () => {
     const engine = new PaintEngine()
     await expect(engine.exportPng()).rejects.toThrow(/canvas is not attached/i)
+  })
+
+  it('commits a batch of operations as one undoable step', () => {
+    const engine = new PaintEngine()
+    const two = [stroke('a'), stroke('b')]
+    engine.commitOperations([stroke('first')])
+    expect(engine.getSnapshot().operationCount).toBe(1)
+
+    engine.commitOperations(two)
+    expect(engine.getSnapshot().operationCount).toBe(3)
+
+    engine.undo()
+    expect(engine.getSnapshot().operationCount).toBe(1)
+
+    engine.undo()
+    expect(engine.getSnapshot().operationCount).toBe(0)
+
+    engine.redo()
+    engine.redo()
+    expect(engine.getSnapshot().operationCount).toBe(3)
+  })
+
+  it('cannot export an image (jpeg) before a canvas is attached', async () => {
+    const engine = new PaintEngine()
+    await expect(engine.exportImage('jpeg')).rejects.toThrow(/canvas is not attached/i)
   })
 
   it('rotates the document and its content', () => {

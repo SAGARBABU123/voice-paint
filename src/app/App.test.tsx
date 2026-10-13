@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import App from './App'
 
@@ -10,6 +10,11 @@ async function renderApp() {
   })
 }
 
+/** The vertical rail starts collapsed — hover to reveal the full kit. */
+function expandRail() {
+  fireEvent.mouseEnter(screen.getByRole('toolbar', { name: /more tools/i }))
+}
+
 describe('App', () => {
   it('renders the product name', async () => {
     await renderApp()
@@ -19,6 +24,7 @@ describe('App', () => {
   it('renders the drawing toolbar and canvas workspace', async () => {
     await renderApp()
     expect(screen.getByRole('toolbar', { name: /drawing tools/i })).toBeInTheDocument()
+    expect(screen.getByRole('toolbar', { name: /more tools/i })).toBeInTheDocument()
     expect(screen.getByLabelText(/drawing canvas/i)).toBeInTheDocument()
   })
 
@@ -34,15 +40,17 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /shortcuts/i })).toBeInTheDocument()
   })
 
-  it('exposes image import and view controls', async () => {
+  it('exposes image import and the sheet clear action', async () => {
     await renderApp()
+    expandRail()
+    fireEvent.click(screen.getByRole('button', { name: 'Export' }))
     expect(screen.getByRole('button', { name: /open image/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Zoom in' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Fit to window' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Clear canvas' })).toBeInTheDocument()
   })
 
   it('exposes document transform controls', async () => {
     await renderApp()
+    expandRail()
     expect(screen.getByRole('group', { name: 'Document' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Rotate right' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Resize' })).toBeInTheDocument()

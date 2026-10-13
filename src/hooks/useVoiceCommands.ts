@@ -1,5 +1,10 @@
 import { useCallback, useState } from 'react'
 import { TOOL_LABELS } from '../components/toolLabels'
+import {
+  SKETCH_DETAIL_LABELS,
+  SKETCH_STYLE_LABELS,
+  SKETCH_WEIGHT_LABELS,
+} from '../paint/sketchStyles'
 import { BrowserSpeechAdapter } from '../voice/adapters/BrowserSpeechAdapter'
 import { WhisperSpeechAdapter } from '../voice/adapters/WhisperSpeechAdapter'
 import type { SpeechRecognitionAdapter, SpeechRecognitionStatus } from '../voice/adapters/types'
@@ -90,6 +95,12 @@ function describeCommand(command: PaintCommand): string {
       return 'Canvas cleared'
     case 'canvas.export':
       return 'Exported as PNG'
+    case 'sketch.style.set':
+      return `Sketch style set to ${SKETCH_STYLE_LABELS[command.style]}`
+    case 'sketch.weight.set':
+      return `Sketch weight set to ${SKETCH_WEIGHT_LABELS[command.weight]}`
+    case 'sketch.detail.set':
+      return `Sketch detail set to ${SKETCH_DETAIL_LABELS[command.detail]}`
     case 'help.open':
       return 'Showing voice commands'
   }

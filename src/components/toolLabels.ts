@@ -1,4 +1,5 @@
 import type { PaintTool } from '../paint/types'
+import type { IconName } from './ui/Icon'
 
 export const TOOL_LABELS: Record<PaintTool, string> = {
   pencil: 'Pencil',
@@ -6,7 +7,61 @@ export const TOOL_LABELS: Record<PaintTool, string> = {
   line: 'Line',
   rectangle: 'Rectangle',
   ellipse: 'Ellipse',
+  curve: 'Curve',
+  'rounded-rectangle': 'Rounded rectangle',
+  polygon: 'Polygon',
+  triangle: 'Triangle',
+  'right-triangle': 'Right triangle',
+  diamond: 'Diamond',
+  pentagon: 'Pentagon',
+  hexagon: 'Hexagon',
+  'arrow-up': 'Up arrow',
+  'arrow-right': 'Right arrow',
+  'arrow-down': 'Down arrow',
+  'arrow-left': 'Left arrow',
+  'star-4': 'Four point star',
+  'star-5': 'Five point star',
+  'star-6': 'Six point star',
+  chat: 'Rounded chat rectangle',
+  'callout-round': 'Oval callout',
+  'callout-cloud': 'Cloud callout',
+  heart: 'Heart',
+  lightning: 'Lightning',
   text: 'Text',
   fill: 'Fill',
   select: 'Select',
+}
+
+/** Freeform tools live in the header beside the title. */
+export const TOOLS_FREEFORM: PaintTool[] = ['pencil', 'eraser', 'text', 'fill', 'select']
+
+export const TOOL_ICONS: Record<PaintTool, IconName> = {
+  pencil: 'pencil',
+  eraser: 'eraser',
+  line: 'line',
+  rectangle: 'rectangle',
+  ellipse: 'ellipse',
+  curve: 'curve',
+  'rounded-rectangle': 'rounded-rectangle',
+  polygon: 'polygon',
+  triangle: 'triangle',
+  'right-triangle': 'right-triangle',
+  diamond: 'diamond',
+  pentagon: 'pentagon',
+  hexagon: 'hexagon',
+  'arrow-up': 'arrow-up',
+  'arrow-right': 'arrow-right',
+  'arrow-down': 'arrow-down',
+  'arrow-left': 'arrow-left',
+  'star-4': 'star-4',
+  'star-5': 'star-5',
+  'star-6': 'star-6',
+  chat: 'chat',
+  'callout-round': 'callout-round',
+  'callout-cloud': 'callout-cloud',
+  heart: 'heart',
+  lightning: 'lightning',
+  text: 'text',
+  fill: 'fill',
+  select: 'select',
 }

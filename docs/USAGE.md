@@ -44,6 +44,37 @@ document, centred, and added as a normal operation — so it can be undone,
 redone, erased, and is saved with your project. Transparent areas show the white
 background.
 
+## Sketching a photo
+
+Use **Write image…** to turn a PNG/JPEG into hand-drawn pencil strokes on the
+sheet: it detects the photo's edges with OpenCV.js and renders them as real,
+editable pencil strokes via rough.js, in the current colour and pen width. The
+whole conversion is one undoable step.
+
+**Five sketch pencils** sit in the left rail under _Sketch pencil_, and they
+can also be chosen by voice:
+
+| Pencil        | Look                                               |
+| ------------- | -------------------------------------------------- |
+| Pencil        | matches the current pen colour, medium weight      |
+| Charcoal      | smudgy, bold, dark — independent of the pen colour |
+| Colour pencil | smooth and fine, follows the current colour        |
+| Ink           | crisp, thin, dark — like a fine-nib pen            |
+| Hatch         | dashed strokes that read as cross-hatching         |
+
+**Weight** (lighter / normal / darker) shifts the stroke colour and width;
+**Detail** (simpler / normal / more) controls how much of the photo's edges
+the conversion keeps. Voice examples: “sketch it in charcoal”, “sketch it
+darker”, “sketch it with more detail” — each sets the next conversion.
+
+As the strokes land, you'll see them **written by hand**: a pen tip skims the
+sheet, drawing each stroke one after another (top-to-bottom, left-to-right)
+with a short pen-lift pause between lines — purely visual, the strokes are
+final the moment the conversion finishes.
+
+The first conversion loads the bundled computer-vision engine (~15 MB, cached
+by the browser afterwards), so it can take a few seconds the first time.
+
 ## Document transforms
 
 - **Rotate** the whole document left or right in 90° steps.

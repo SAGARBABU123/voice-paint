@@ -23,7 +23,7 @@ Phase 7 ✅ transforms · Phase 8 ✅ text/fill/selection · Phase 9 ✅ colours
 cross-browser E2E · Phase 10 ✅ a11y hardening · Phase 11 ✅ compound voice
 commands · Phase 12 ✅ English grammar (synonyms) · Phase 13 ✅ Whisper speech engine
 (Cloudflare Workers AI) · Phase 14 ✅ PWA packaging · Phase 15 ✅ deploy
-pipeline.
+pipeline · Phase 16 ✅ Vault UI design system refresh.
 
 ## Stack (locked)
 
@@ -32,6 +32,19 @@ Testing Library · ESLint + Prettier. Speech: browser Web Speech API by default,
 or a Cloudflare Workers AI (Whisper) Worker when `VITE_WHISPER_ENDPOINT` is set.
 The app core remains static and backend-free; the Worker is an optional, separate
 deployment.
+
+**UI:** the [Vault UI design system](https://vault-ui-bice.vercel.app) — warm
+neutrals, one accent, light-from-above elevation, 4px grid. Tokens and
+primitive CSS are vendored under `src/design/` (tailwind v4 `@theme`) and wrapped
+as typed components in `src/components/ui/`; no runtime UI dependency is added.
+Ocean (crisp white + blue → cyan → teal) is the LOCKED default — it lives
+in the base tokens, with no attribute needed. Alternate combos are optional
+`[data-theme]` blocks (Midnight dark, Sunset, Emerald, Aurora, Warm paper); a
+ThemeSwitcher dropdown in the header cycles them live and remembers the choice
+in localStorage. The brand mark (brush + paint drop) and favicon match in every
+theme. Inter is the single face, on one 11/13/15/17px scale, with
+display-family headings, tight tracking, tabular numerals, and optimized
+rendering — a consistent professional type system across every theme.
 
 ## Scripts
 
@@ -91,6 +104,11 @@ The build is a fully static site — no backend, database, or secrets. Run
   no layers. **Text**, **Fill**, and **Select** (move/cut) are supported, along
   with rotate, crop, resize, zoom, and pan; fill and selection/move bake their
   result into raster operations.
+- **Sketch trace** converts an uploaded photo into hand-drawn pencil strokes
+  with OpenCV.js (Canny → contours → polyline approximation) rendered through
+  rough.js (version 4.6.6) for the hand-drawn look. The ~15 MB WASM engine is
+  a separate lazy-loaded chunk and is browser-cached after the first
+  conversion, so the first one can take a few seconds.
 - The eraser paints the background colour; **Clear** is confirmed first and can
   be undone.
 - Voice uses a fixed grammar with no natural-language understanding; unknown

@@ -85,6 +85,15 @@ export async function executeCommand(
         effects.onError?.('I could not export the PNG in this browser.')
       }
       return
+    case 'sketch.style.set':
+      engine.setSketchStyle(command.style)
+      return
+    case 'sketch.weight.set':
+      engine.setSketchWeight(command.weight)
+      return
+    case 'sketch.detail.set':
+      engine.setSketchDetail(command.detail)
+      return
     case 'help.open':
       effects.onHelp?.()
       return

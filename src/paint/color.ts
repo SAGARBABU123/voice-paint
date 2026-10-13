@@ -23,3 +23,19 @@ export function hexToRgba(hex: string): Rgba {
     a: 255,
   }
 }
+
+const clampByte = (value: number): number => Math.max(0, Math.min(255, Math.round(value)))
+
+/**
+ * Mixes a hex colour toward a target by `amount` (0..1) — e.g. toward white
+ * for a fainter pencil, toward black for a bolder one. Returns #rrggbb.
+ */
+export function shiftToward(hex: string, targetHex: string, amount: number): string {
+  const source = hexToRgba(hex)
+  const target = hexToRgba(targetHex)
+  const t = Math.max(0, Math.min(1, amount))
+  const r = clampByte(source.r + (target.r - source.r) * t)
+  const g = clampByte(source.g + (target.g - source.g) * t)
+  const b = clampByte(source.b + (target.b - source.b) * t)
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
+}

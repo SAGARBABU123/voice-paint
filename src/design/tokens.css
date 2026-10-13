@@ -1,0 +1,265 @@
+/**
+ * Voice Over Paint — Vault UI design tokens (vendored from @vaultui/tokens,
+ * warm-paper default theme only). Tailwind v4 CSS-first theme.
+ *
+ * Every component consumes these tokens, so re-branding is a single
+ * variable override. Fonts (Inter Variable latin + latin-ext) are bundled
+ * locally in ./fonts.
+ */
+/* Inter Variable (400 weight range 100–900, with opsz axis) — latin */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url(./fonts/inter-latin-opsz-normal.woff2) format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* Inter Variable — latin-ext (accented Latin: é, ñ, ø …) */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url(./fonts/inter-latin-ext-opsz-normal.woff2) format('woff2-variations');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+/* ==========================================================================
+ * OCEAN THEME (locked default) — crisp white + blue → cyan → teal
+ * ======================================================================== */
+@theme {
+  /* ===== Brand scale (locked default = Ocean: blue → cyan) ===== */
+  --color-brand-50: #eef6ff;
+  --color-brand-100: #dceeff;
+  --color-brand-200: #bcdcff;
+  --color-brand-300: #8fc3ff;
+  --color-brand-400: #5ca4f7;
+  --color-brand-500: #3384ec;
+  --color-brand-600: #1e66d6;
+  --color-brand-700: #1b53ae;
+  --color-brand-800: #1a4387;
+  --color-brand-900: #173a6e;
+  --color-brand-950: #0e2549;
+
+  /* ===== Surface scale — crisp cool white, faint blue droplet =====
+     0 = panels/cards · 50 = app background · 100 = hover fills/wells ·
+     200 = hairline borders · 300 = muted dividers · 400 = hint text ·
+     600 = secondary text (≥4.5:1 on white) · 900 = primary text ·
+     950 = code wells / deep layers. */
+  --color-surface-0: #ffffff;
+  --color-surface-50: #f8fbff;
+  --color-surface-100: #f1f6fc;
+  --color-surface-200: #e3ebf4;
+  --color-surface-300: #d5deea;
+  --color-surface-400: #a8b8cc;
+  --color-surface-500: #8fa1ba;
+  --color-surface-600: #5b6b83;
+  --color-surface-700: #4a586d;
+  --color-surface-800: #3b4657;
+  --color-surface-900: #303842;
+  --color-surface-950: #1d222b;
+
+  /* ===== Default gradients (consumed by the chrome rules in themes.css) ===== */
+  --gradient-brand: linear-gradient(135deg, #1c5fde 0%, #2184c8 45%, #1d8f92 100%);
+  --gradient-brand-hover: linear-gradient(135deg, #1f6ae6 0%, #2792d3 45%, #239ca0 100%);
+  --gradient-surface: linear-gradient(160deg, #ffffff 0%, #f2f7fe 50%, #ecf6fb 100%);
+  --gradient-workspace:
+    radial-gradient(var(--color-surface-300) 1px, transparent 1px),
+    linear-gradient(160deg, #f1f7fd 0%, #eef7fa 100%);
+
+  /* ===== Semantic scales (50–950) — soft tints + dark readable text ===== */
+  --color-success-50: #e9f8f1;
+  --color-success-100: #cdf0df;
+  --color-success-200: #a1e2c2;
+  --color-success-300: #6ad2a1;
+  --color-success-400: #3ec287;
+  --color-success-500: #2fbf7f;
+  --color-success-600: #239e6b;
+  --color-success-700: #1c8059;
+  --color-success-800: #176547;
+  --color-success-900: #124c36;
+  --color-success-950: #0b3424;
+  --color-warning-50: #fdf8ec;
+  --color-warning-100: #faf0d0;
+  --color-warning-200: #f4df9e;
+  --color-warning-300: #eecc6c;
+  --color-warning-400: #eabb52;
+  --color-warning-500: #e8a93d;
+  --color-warning-600: #c98a28;
+  --color-warning-700: #a46d20;
+  --color-warning-800: #7f521c;
+  --color-warning-900: #5c3c18;
+  --color-warning-950: #3f2911;
+  --color-danger-50: #fdedf0;
+  --color-danger-100: #f9d3da;
+  --color-danger-200: #f3aeb8;
+  --color-danger-300: #ec8393;
+  --color-danger-400: #e76f80;
+  --color-danger-500: #e56b7a;
+  --color-danger-600: #c94f60;
+  --color-danger-700: #a83e4e;
+  --color-danger-800: #863141;
+  --color-danger-900: #652830;
+  --color-danger-950: #461b21;
+  --color-info-50: #e9f5fd;
+  --color-info-100: #cbe8fa;
+  --color-info-200: #9dd4f3;
+  --color-info-300: #66bcea;
+  --color-info-400: #53a9dc;
+  --color-info-500: #5aa7e2;
+  --color-info-600: #3d8cc7;
+  --color-info-700: #2f70a3;
+  --color-info-800: #285780;
+  --color-info-900: #21425f;
+  --color-info-950: #152c41;
+
+  /* ===== Type ===== */
+  --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --leading-tight: 1.15;
+
+  /* ===== Type scale (Inter) — one rhythm, no ad-hoc sizes ===== */
+  --text-11: 0.6875rem;
+  --text-11--line-height: 1.3;
+  --text-13: 0.8125rem;
+  --text-13--line-height: 1.5;
+  --text-15: 0.9375rem;
+  --text-15--line-height: 1.35;
+  --text-17: 1.0625rem;
+  --text-17--line-height: 1.25;
+
+  /* ===== Radii (tight: 6px buttons, 8px cards, pills for chips, 12px
+     overlays, 16px dialogs) ===== */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  /* ===== Elevation — light from above, two-part shadows =====
+     soft = buttons/cards · raised = dropdowns/popovers · popover = modals ·
+     inset = inputs/wells · pressed = active buttons. */
+  --shadow-soft: 0 1px 2px rgb(63 57 43 / 0.05), 0 2px 6px rgb(63 57 43 / 0.07);
+  --shadow-raised: 0 2px 4px rgb(63 57 43 / 0.05), 0 10px 20px rgb(63 57 43 / 0.1);
+  --shadow-popover: 0 2px 6px rgb(63 57 43 / 0.06), 0 18px 40px rgb(63 57 43 / 0.14);
+  --shadow-inset: inset 0 1px 2px rgb(63 57 43 / 0.06);
+  --shadow-pressed: 0 1px 2px rgb(63 57 43 / 0.04), inset 0 2px 4px rgb(63 57 43 / 0.08);
+
+  /* ===== Motion ===== */
+  --animate-pulse-ring: pulse-ring 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-rise: rise 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes pulse-ring {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Inter rendering + reading rhythm for UI text. */
+  body {
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    font-variant-ligatures: contextual;
+  }
+
+  /* Headings: display family, semibold, tight leading + tracking, balanced. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.011em;
+    text-wrap: balance;
+  }
+
+  /* Respect users who disable motion: collapse all animations/transitions. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-surface-900);
+    background-color: var(--color-surface-50);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-200);
+    color: var(--color-brand-900);
+  }
+}
+
+/* ==========================================================================
+ * SHADOW RE-BIND (required)
+ * Tailwind v4 inlines shadow *values* into utilities at build time — only
+ * colors are var()-driven. Re-point each shadow utility at its --shadow-*
+ * token on the element itself so the tokens above drive elevation.
+ * ======================================================================== */
+[data-vop]
+  :is(
+    .shadow-soft,
+    .hover\:shadow-soft:hover,
+    .shadow-raised,
+    .hover\:shadow-raised:hover,
+    .shadow-popover,
+    .shadow-inset,
+    .active\:shadow-inset:active,
+    .active\:shadow-pressed:active
+  ) {
+  --tw-shadow: none;
+}
+[data-vop] :is(.shadow-soft, .hover\:shadow-soft:hover) {
+  --tw-shadow: var(--shadow-soft);
+}
+[data-vop] :is(.shadow-raised, .hover\:shadow-raised:hover) {
+  --tw-shadow: var(--shadow-raised);
+}
+[data-vop] :is(.shadow-popover) {
+  --tw-shadow: var(--shadow-popover);
+}
+[data-vop] :is(.shadow-inset, .active\:shadow-inset:active) {
+  --tw-shadow: var(--shadow-inset);
+}
+[data-vop] :is(.shadow-pressed, .active\:shadow-pressed:active) {
+  --tw-shadow: var(--shadow-pressed);
+}

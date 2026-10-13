@@ -33,6 +33,7 @@ function createFakeContext() {
     arc: record('arc'),
     ellipse: record('ellipse'),
     strokeRect: record('strokeRect'),
+    setLineDash: record('setLineDash'),
     drawImage: record('drawImage'),
     translate: record('translate'),
     rotate: record('rotate'),

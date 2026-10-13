@@ -1,7 +1,11 @@
 @import 'tailwindcss';
+@import './design/tokens.css';
+@import './design/button.css';
+@import './design/primitives.css';
+@import './design/themes.css';
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 html,
@@ -12,4 +16,26 @@ body,
 
 body {
   margin: 0;
+}
+
+/* Subtle, in-theme scrollbars for desktop chrome (toolbar rows, panels). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-300) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-surface-300);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-surface-400);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
 }

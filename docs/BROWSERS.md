@@ -38,6 +38,11 @@ Notes:
 
 - **Import scales to fit** — an opened PNG/JPEG is scaled (contain) and centred
   inside the document; importing does not resize the document.
+- **Sketch trace lazy-loads a WASM engine** — the first “write my photo”
+  conversion fetches and decodes the bundled OpenCV.js chunk (~15 MB, cached by
+  the browser afterwards), so the very first conversion can take a few seconds.
+  It needs WebAssembly support (all supported browsers above) and works offline
+  once the chunk is cached.
 - **No transparency** — drawings composite onto the white background, so
   transparent areas of an imported image show as white, and the eraser paints the
   background colour.

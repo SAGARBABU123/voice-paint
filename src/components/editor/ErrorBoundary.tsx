@@ -1,4 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { Button } from '../ui/Button'
+import { Icon } from '../ui/Icon'
 
 type ErrorBoundaryProps = { children: ReactNode }
 type ErrorBoundaryState = { hasError: boolean }
@@ -20,19 +22,20 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div
           role="alert"
-          className="flex h-screen flex-col items-center justify-center gap-3 p-6 text-center"
+          className="flex h-screen flex-col items-center justify-center gap-4 bg-surface-50 p-6 text-center"
         >
-          <h1 className="text-lg font-semibold">Something went wrong</h1>
-          <p className="max-w-sm text-sm text-neutral-600 dark:text-neutral-400">
+          <div className="vault-empty__icon">
+            <Icon name="alert" size={22} />
+          </div>
+          <h1 className="font-display text-xl font-semibold tracking-tight text-surface-900">
+            Something went wrong
+          </h1>
+          <p className="max-w-sm text-sm leading-relaxed text-surface-600">
             The editor hit an unexpected error. Reload to keep drawing.
           </p>
-          <button
-            type="button"
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700"
-            onClick={() => window.location.reload()}
-          >
+          <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
             Reload editor
-          </button>
+          </Button>
         </div>
       )
     }

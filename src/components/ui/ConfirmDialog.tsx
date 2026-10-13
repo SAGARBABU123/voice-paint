@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
+import { Icon } from './Icon'
 
 type ConfirmDialogProps = {
   title: string
@@ -10,7 +11,7 @@ type ConfirmDialogProps = {
   onCancel: () => void
 }
 
-/** Small accessible confirmation dialog used for destructive voice commands. */
+/** Accessible destructive confirmation dialog (Vault modal + alert pattern). */
 export function ConfirmDialog({
   title,
   description,
@@ -29,39 +30,43 @@ export function ConfirmDialog({
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <>
+      <div className="vault-modal__backdrop" aria-hidden="true" />
       <div
         ref={dialogRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
         aria-describedby="confirm-description"
-        className="w-full max-w-sm rounded-lg bg-white p-4 shadow-xl dark:bg-neutral-900"
+        className="vault-modal__dialog max-w-sm"
       >
-        <h2 id="confirm-title" className="text-base font-semibold">
+        <div className="vault-alert__icon">
+          <Icon name="alert" size={20} />
+        </div>
+        <h2 id="confirm-title" className="vault-modal__title">
           {title}
         </h2>
-        <p id="confirm-description" className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+        <p id="confirm-description" className="vault-modal__body">
           {description}
         </p>
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="vault-modal__footer">
           <button
             type="button"
+            className="vault-btn vault-btn-secondary vault-btn-sm"
             onClick={onCancel}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700"
           >
             {cancelLabel}
           </button>
           <button
             ref={confirmRef}
             type="button"
+            className="vault-btn vault-btn-danger vault-btn-sm"
             onClick={onConfirm}
-            className="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700"
           >
             {confirmLabel}
           </button>
         </div>
       </div>
-    </div>
+    </>
   )
 }

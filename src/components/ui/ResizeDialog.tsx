@@ -8,10 +8,7 @@ type ResizeDialogProps = {
   onCancel: () => void
 }
 
-const FIELD_CLASS =
-  'w-24 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-950'
-
-/** Small dialog for resizing the document to explicit pixel dimensions. */
+/** Dialog for resizing the document to explicit pixel dimensions. */
 export function ResizeDialog({
   initialWidth,
   initialHeight,
@@ -40,62 +37,66 @@ export function ResizeDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <>
+      <div className="vault-modal__backdrop" aria-hidden="true" />
       <form
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="resize-title"
-        className="w-full max-w-xs rounded-lg bg-white p-4 shadow-xl dark:bg-neutral-900"
+        className="vault-modal__dialog max-w-sm"
         onSubmit={handleSubmit}
       >
-        <h2 id="resize-title" className="text-base font-semibold">
+        <h2 id="resize-title" className="vault-modal__title">
           Resize document
         </h2>
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="vault-modal__body mt-1">
           The drawing is scaled to the new size. This can be undone.
         </p>
-        <div className="mt-3 flex flex-col gap-2 text-sm">
-          <div className="flex items-center justify-between gap-3">
-            <label htmlFor="resize-width">Width</label>
+        <div className="mt-4 flex flex-col gap-3">
+          <label
+            htmlFor="resize-width"
+            className="flex items-center justify-between gap-4 text-sm text-surface-700"
+          >
+            <span>Width</span>
             <input
               ref={widthRef}
               id="resize-width"
               type="number"
               min={1}
               value={width}
-              className={FIELD_CLASS}
+              className="vault-input w-28 text-right tabular-nums"
               onChange={(event) => setWidth(event.target.value)}
             />
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <label htmlFor="resize-height">Height</label>
+          </label>
+          <label
+            htmlFor="resize-height"
+            className="flex items-center justify-between gap-4 text-sm text-surface-700"
+          >
+            <span>Height</span>
             <input
               id="resize-height"
               type="number"
               min={1}
               value={height}
-              className={FIELD_CLASS}
+              className="vault-input w-28 text-right tabular-nums"
               onChange={(event) => setHeight(event.target.value)}
             />
-          </div>
+          </label>
         </div>
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="vault-modal__footer">
           <button
             type="button"
+            className="vault-btn vault-btn-secondary vault-btn-sm"
             onClick={onCancel}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700"
           >
             Cancel
           </button>
-          <button
-            type="submit"
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
-          >
+          <button type="submit" className="vault-btn vault-btn-primary vault-btn-sm">
             Apply resize
           </button>
         </div>
       </form>
-    </div>
+    </>
   )
 }

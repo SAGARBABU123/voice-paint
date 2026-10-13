@@ -1,6 +1,7 @@
 import { BACKGROUND_COLOR } from './constants'
-import { centerOf, normalizeRect, radiiOf } from './geometry'
+import { applyLineStyle } from './lineStyle'
 import type { PaintOperation } from './types'
+import { strokeShape } from './shapes'
 
 /** Resolves a stored image data URL to something drawable (or null if not ready). */
 export type ImageResolver = (dataUrl: string) => CanvasImageSource | null
@@ -46,6 +47,8 @@ export function renderOperation(
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   ctx.lineWidth = operation.size
+  // Solid is the default for older saved documents (no style field).
+  applyLineStyle(ctx, operation.style ?? 'solid', operation.size)
 
   if (operation.kind === 'stroke') {
     const color = operation.tool === 'eraser' ? BACKGROUND_COLOR : operation.color
@@ -66,25 +69,9 @@ export function renderOperation(
       }
       ctx.stroke()
     }
-  } else {
+  } else if (operation.kind === 'shape') {
     ctx.strokeStyle = operation.color
-    const { start, end } = operation
-
-    if (operation.tool === 'line') {
-      ctx.beginPath()
-      ctx.moveTo(start.x, start.y)
-      ctx.lineTo(end.x, end.y)
-      ctx.stroke()
-    } else if (operation.tool === 'rectangle') {
-      const rect = normalizeRect(start, end)
-      ctx.strokeRect(rect.x, rect.y, rect.width, rect.height)
-    } else {
-      const center = centerOf(start, end)
-      const radius = radiiOf(start, end)
-      ctx.beginPath()
-      ctx.ellipse(center.x, center.y, radius.x, radius.y, 0, 0, Math.PI * 2)
-      ctx.stroke()
-    }
+    strokeShape(ctx, operation.tool, operation.start, operation.end)
   }
 
   ctx.restore()

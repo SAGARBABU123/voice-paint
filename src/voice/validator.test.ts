@@ -28,6 +28,25 @@ describe('validateCommands', () => {
     expect(result.ok).toBe(true)
   })
 
+  it('accepts real sketch pencils and rejects invented ones', () => {
+    const valid = validateCommands([
+      { type: 'sketch.style.set', style: 'charcoal' },
+      { type: 'sketch.weight.set', weight: 'darker' },
+      { type: 'sketch.detail.set', detail: 'more' },
+    ])
+    expect(valid.ok).toBe(true)
+
+    const badStyle = validateCommands([{ type: 'sketch.style.set', style: 'airbrush' as never }])
+    expect(badStyle.ok).toBe(false)
+    if (!badStyle.ok) expect(badStyle.reason).toBe('invalid_parameter')
+
+    const badWeight = validateCommands([{ type: 'sketch.weight.set', weight: 'gloomy' as never }])
+    expect(badWeight.ok).toBe(false)
+
+    const badDetail = validateCommands([{ type: 'sketch.detail.set', detail: 'a lot' as never }])
+    expect(badDetail.ok).toBe(false)
+  })
+
   it('clamps shape counts and defaults the placement', () => {
     const result = validateCommands([{ type: 'shape.draw', tool: 'ellipse', count: 999 }])
     expect(result.ok).toBe(true)

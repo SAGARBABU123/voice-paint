@@ -20,18 +20,19 @@ painting without the user seeing it first (industry-standard safe pattern).
 
 ## Command catalogue
 
-| Intent      | Example phrases                                    | Expected behavior                     |
-| ----------- | -------------------------------------------------- | ------------------------------------- |
-| Select tool | "use pencil", "switch to eraser", "choose ellipse" | Change active tool                    |
-| Draw shape  | "draw a circle", "add a rectangle"                 | Draw a shape centred in the document  |
-| Fill        | "fill it red", "fill it"                           | Flood-fill the centre with the colour |
-| Set color   | "set color to red", "use blue"                     | Update active color                   |
-| Set width   | "set brush size to 8", "make the brush smaller"    | Update validated width                |
-| Undo        | "undo", "undo last action"                         | Undo one supported action             |
-| Redo        | "redo", "restore last action"                      | Redo one supported action             |
-| Clear       | "clear canvas"                                     | **Ask for confirmation first**        |
-| Export      | "export PNG", "save as PNG"                        | Local PNG download + result           |
-| Help        | "what can I say?", "show voice commands"           | Open command help                     |
+| Intent        | Example phrases                                                           | Expected behavior                                          |
+| ------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Select tool   | "use pencil", "switch to eraser", "choose ellipse"                        | Change active tool                                         |
+| Draw shape    | "draw a circle", "add a rectangle"                                        | Draw a shape centred in the document                       |
+| Fill          | "fill it red", "fill it"                                                  | Flood-fill the centre with the colour                      |
+| Set color     | "set color to red", "use blue"                                            | Update active color                                        |
+| Set width     | "set brush size to 8", "make the brush smaller"                           | Update validated width                                     |
+| Sketch pencil | "sketch it in charcoal", "sketch it darker", "sketch it with more detail" | Set the pencil/weight/detail used by the next photo sketch |
+| Undo          | "undo", "undo last action"                                                | Undo one supported action                                  |
+| Redo          | "redo", "restore last action"                                             | Redo one supported action                                  |
+| Clear         | "clear canvas"                                                            | **Ask for confirmation first**                             |
+| Export        | "export PNG", "save as PNG"                                               | Local PNG download + result                                |
+| Help          | "what can I say?", "show voice commands"                                  | Open command help                                          |
 
 ## Compound commands
 
@@ -41,6 +42,8 @@ same engine path:
 
 - "draw a circle and fill it with red color" → draw an ellipse, set the colour
   to red, then flood-fill inside it.
+- "sketch it in charcoal darker with more detail" → set the sketch pencil to
+  charcoal, the weight to darker, and keep more photo detail.
 - "use blue then draw a rectangle" → set the colour, then draw a rectangle.
 
 If **any** clause is unknown, the whole phrase fails with a message and nothing

@@ -1,17 +1,26 @@
-export const PAINT_TOOLS = [
-  'pencil',
-  'eraser',
-  'line',
-  'rectangle',
-  'ellipse',
-  'text',
-  'fill',
-  'select',
-] as const
+import { SHAPE_ORDER, isShapeTool, type ShapeTool as ImportedShapeTool } from './shapes'
+
+export const PAINT_TOOLS = ['pencil', 'eraser', ...SHAPE_ORDER, 'text', 'fill', 'select'] as const
 
 export type PaintTool = (typeof PAINT_TOOLS)[number]
+
+/** Pen/line render styles — dash patterns applied to strokes and shapes. */
+export const STROKE_STYLES = [
+  'solid',
+  'dashed',
+  'long-dash',
+  'dotted',
+  'dash-dot',
+  'dash-dot-dot',
+] as const
+
+export type StrokeStyle = (typeof STROKE_STYLES)[number]
+
+export function isStrokeStyle(value: unknown): value is StrokeStyle {
+  return typeof value === 'string' && (STROKE_STYLES as readonly string[]).includes(value)
+}
 export type StrokeTool = Extract<PaintTool, 'pencil' | 'eraser'>
-export type ShapeTool = Extract<PaintTool, 'line' | 'rectangle' | 'ellipse'>
+export type ShapeTool = ImportedShapeTool
 
 export function isPaintTool(value: unknown): value is PaintTool {
   return typeof value === 'string' && (PAINT_TOOLS as readonly string[]).includes(value)
@@ -21,9 +30,7 @@ export function isStrokeTool(tool: PaintTool): tool is StrokeTool {
   return tool === 'pencil' || tool === 'eraser'
 }
 
-export function isShapeTool(tool: PaintTool): tool is ShapeTool {
-  return tool === 'line' || tool === 'rectangle' || tool === 'ellipse'
-}
+export { isShapeTool }
 
 export type Point = { x: number; y: number }
 
@@ -34,6 +41,8 @@ export type StrokeOperation = {
   color: string
   size: number
   points: Point[]
+  /** Absent means solid (keeps older saved documents compatible). */
+  style?: StrokeStyle
 }
 
 export type ShapeOperation = {
@@ -44,6 +53,8 @@ export type ShapeOperation = {
   size: number
   start: Point
   end: Point
+  /** Absent means solid (keeps older saved documents compatible). */
+  style?: StrokeStyle
 }
 
 /** A raster imported from a file, positioned and scaled in document space. */

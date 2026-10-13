@@ -4,15 +4,25 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type DragEvent as ReactDragEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
-import { useViewport } from '../../hooks/useViewport'
-import { clamp01, partialOperation } from '../../paint/animate'
+import { getCursorPositionStore } from '../../hooks/useCursorPosition'
+import { isEditableTarget } from '../../keyboard/shortcuts'
+import {
+  activeStrokeIndex,
+  clamp01,
+  partialOperation,
+  penTip,
+  revealDuration,
+  strokeReveal,
+} from '../../paint/animate'
 import { clientToDocumentPoint } from '../../paint/coordinates'
 import { containsPoint, distance, normalizeRect, type Rect } from '../../paint/geometry'
 import { createId } from '../../paint/id'
 import { getCachedImage, preloadImages } from '../../paint/imageCache'
+import { importImageFile } from '../../paint/importImage'
 import { renderScene, type PreviewItem } from '../../paint/renderer'
 import {
   isImageOperation,
@@ -21,11 +31,70 @@ import {
   type PaintOperation,
   type Point,
 } from '../../paint/types'
-import { ViewControls } from './ViewControls'
+import { Button } from '../ui/Button'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { Icon } from '../ui/Icon'
+import { useToast } from '../ui/useToast'
 
 const MIN_POINT_DISTANCE = 1
-const ACTION_CLASS =
-  'rounded-md border border-neutral-300 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700'
+
+function normalizeDirection(x: number, y: number): Point {
+  const length = Math.hypot(x, y)
+  return length > 1e-6 ? { x: x / length, y: y / length } : { x: 1, y: 0 }
+}
+
+/**
+ * Small pencil glyph painted on the sheet while a batch is being revealed:
+ * the graphite tip sits on the point currently being written and the body
+ * tilts along the pen's travel direction, sized to the active brush.
+ */
+function drawPenCursor(
+  context: CanvasRenderingContext2D,
+  tip: Point,
+  direction: Point,
+  brushSize: number,
+): void {
+  const height = Math.max(9, Math.min(20, brushSize * 6))
+  const length = height * 1.7
+  const half = height / 2
+
+  context.save()
+  context.translate(tip.x, tip.y)
+  // The tip points along travel; rotate the glyph so the lead meets the sheet.
+  context.rotate(Math.atan2(direction.y, direction.x))
+
+  // Graphite lead, narrow at the contact point.
+  context.beginPath()
+  context.moveTo(0, 0)
+  context.lineTo(length * 0.3, -half * 0.55)
+  context.lineTo(length * 0.3, half * 0.55)
+  context.closePath()
+  context.fillStyle = '#1f1d26'
+  context.fill()
+
+  // Wooden body in a warm tone with a flat rear end.
+  context.beginPath()
+  context.moveTo(length * 0.3, -half * 0.55)
+  context.lineTo(length * 0.72, -half * 0.62)
+  context.lineTo(length, -half * 0.42)
+  context.lineTo(length, half * 0.42)
+  context.lineTo(length * 0.72, half * 0.62)
+  context.lineTo(length * 0.3, half * 0.55)
+  context.closePath()
+  context.fillStyle = '#e8e0cc'
+  context.fill()
+  context.strokeStyle = 'rgba(20, 18, 26, 0.35)'
+  context.lineWidth = Math.max(1, height / 12)
+  context.stroke()
+
+  // Soft contact dot so the writing point reads clearly on any background.
+  context.beginPath()
+  context.arc(0, 0, Math.max(1.2, height / 12), 0, Math.PI * 2)
+  context.fillStyle = 'rgba(31, 29, 38, 0.4)'
+  context.fill()
+
+  context.restore()
+}
 
 export type CanvasStageProps = {
   cropMode?: boolean
@@ -39,19 +108,25 @@ export type CanvasStageProps = {
 export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStageProps = {}) {
   const engine = usePaintEngine()
   const state = usePaintSnapshot()
-  const view = useViewport({ documentWidth: engine.width, documentHeight: engine.height })
-  const { fit, zoomIn, zoomOut } = view
+  const toast = useToast()
+  // Permanent fit-to-width: the sheet always spans the playground's full
+  // width and never zooms in/out on its own.
+  const [scale, setScale] = useState(1)
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const contextRef = useRef<CanvasRenderingContext2D | null>(null)
   const draftRef = useRef<PaintOperation | null>(null)
   const drawingRef = useRef(false)
+  // True while a shape is being drag-drawn with Shift held (straight/square).
+  const shiftLockRef = useRef(false)
   const cropStartRef = useRef<Point | null>(null)
   const selectionStartRef = useRef<Point | null>(null)
   const moveRef = useRef<{ origin: Rect; start: Point } | null>(null)
   // Hand-drawn reveal animation for non-pointer (e.g. voice) operations.
   const extraPreviewRef = useRef<readonly PreviewItem[]>([])
+  // A pen whose tip sits on the sheet at the point currently being written.
+  const penTipRef = useRef<{ point: Point; direction: Point } | null>(null)
   const prevOpCountRef = useRef<number | null>(null)
   const lastPointerAtRef = useRef(0)
   const animFrameRef = useRef<number | null>(null)
@@ -62,6 +137,10 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     active: false,
     rect: null,
   })
+  const [hover, setHover] = useState<Point | null>(null)
+  const [draggingFile, setDraggingFile] = useState(false)
+  // Clear lives on the sheet's corner, so its confirmation dialog lives here too.
+  const [confirmClear, setConfirmClear] = useState(false)
 
   // React's recommended pattern for resetting state when a prop changes.
   if (crop.active !== cropMode) {
@@ -94,6 +173,8 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
       background: engine.background,
       resolveImage: getCachedImage,
     })
+    const pen = penTipRef.current
+    if (pen) drawPenCursor(context, pen.point, pen.direction, engine.getSnapshot().brushSize)
   }, [engine])
 
   useEffect(() => {
@@ -116,11 +197,24 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     if (previous === null || ops.length <= previous) return
 
     const delta = ops.slice(previous)
-    if (delta.every((operation) => operation.kind === 'stroke')) return
-    // Manual actions happen right after pointer activity; voice actions do not.
-    if (Date.now() - lastPointerAtRef.current < 500) return
+    // A sketch/voice batch of strokes is "written" stroke by stroke. Only a
+    // single stroke just drawn by the pointer skips the animation (it was
+    // already drawn live). Multi-stroke batches — e.g. a traced photo — are
+    // always worth the reveal, no matter how recently the sheet was touched.
+    if (
+      delta.length === 1 &&
+      delta[0]?.kind === 'stroke' &&
+      Date.now() - lastPointerAtRef.current < 500
+    ) {
+      return
+    }
 
-    const duration = 200 * delta.length + 120
+    // A newer batch supersedes any reveal still in flight.
+    if (animFrameRef.current !== null) cancelAnimationFrame(animFrameRef.current)
+
+    // Long batches (e.g. a traced photo) draw stroke-by-stroke like a hand,
+    // with a short pen-lift pause between lines, finishing in a lively window.
+    const duration = revealDuration(delta.length)
     const start = performance.now()
     const schedule = (callback: FrameRequestCallback): number =>
       typeof requestAnimationFrame === 'function'
@@ -129,16 +223,42 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
 
     const tick = (now: number) => {
       const progress = clamp01((now - start) / duration)
-      const staged = clamp01(progress * delta.length)
-      extraPreviewRef.current = delta.map((operation, index) => ({
-        operation: partialOperation(operation, clamp01(staged - index)),
-        alpha: operation.kind === 'image' ? clamp01(staged - index) : undefined,
-      }))
+      const activeIndex = activeStrokeIndex(delta.length, progress)
+      extraPreviewRef.current = delta.map((operation, index) => {
+        const reveal = strokeReveal(index, delta.length, progress)
+        return {
+          operation: partialOperation(operation, reveal),
+          alpha: operation.kind === 'image' ? reveal : undefined,
+        }
+      })
+
+      // Park a pen on the sheet at the point currently being written. During
+      // a lift gap the pen is mid-air, so it disappears until the next line.
+      if (activeIndex !== null) {
+        const operation = delta[activeIndex]
+        const reveal = strokeReveal(activeIndex, delta.length, progress)
+        if (operation) {
+          const point = penTip(operation, reveal)
+          const previousPoint =
+            operation.kind === 'stroke'
+              ? operation.points[Math.max(0, Math.ceil(operation.points.length * reveal) - 2)]
+              : point
+          if (point) {
+            const direction = previousPoint
+              ? normalizeDirection(point.x - previousPoint.x, point.y - previousPoint.y)
+              : { x: 1, y: 0 }
+            penTipRef.current = { point, direction }
+          }
+        }
+      } else {
+        penTipRef.current = null
+      }
       paint()
       if (progress < 1) {
         animFrameRef.current = schedule(tick)
       } else {
         extraPreviewRef.current = []
+        penTipRef.current = null
         animFrameRef.current = null
         paint()
       }
@@ -150,6 +270,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     return () => {
       if (animFrameRef.current !== null) cancelAnimationFrame(animFrameRef.current)
       extraPreviewRef.current = []
+      penTipRef.current = null
     }
   }, [])
 
@@ -175,35 +296,62 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     }
   }, [engine, paint, state.revision])
 
+  // The canvas IS the playground: plain white sheet covering the whole div.
+  // Scale uses cover (max) so the sheet fills every pixel — the longer axis
+  // overflows silently and is cropped by overflow-hidden (no scrollbars).
   useLayoutEffect(() => {
     const viewport = viewportRef.current
     if (!viewport) return
-    fit(viewport.clientWidth, viewport.clientHeight)
-  }, [fit])
-
-  useEffect(() => {
-    const viewport = viewportRef.current
-    if (!viewport) return
-    const handleWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey && !event.metaKey) return
-      event.preventDefault()
-      if (event.deltaY < 0) zoomIn()
-      else zoomOut()
+    const compute = () => {
+      const width = viewport.clientWidth
+      const height = viewport.clientHeight
+      if (width <= 0 || height <= 0) return
+      setScale(Math.max(0.05, Math.max(width / engine.width, height / engine.height)))
     }
-    viewport.addEventListener('wheel', handleWheel, { passive: false })
-    return () => viewport.removeEventListener('wheel', handleWheel)
-  }, [zoomIn, zoomOut])
+    compute()
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(compute) : null
+    observer?.observe(viewport)
+    window.addEventListener('resize', compute)
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', compute)
+    }
+  }, [engine])
 
   useEffect(() => {
     if (cropMode) return
     cropStartRef.current = null
   }, [cropMode])
 
-  const handleFit = useCallback(() => {
-    const viewport = viewportRef.current
-    if (!viewport) return
-    fit(viewport.clientWidth, viewport.clientHeight)
-  }, [fit])
+  const handleDragEnter = (event: ReactDragEvent) => {
+    if (event.dataTransfer.types.includes('Files')) setDraggingFile(true)
+  }
+
+  const handleDragOver = (event: ReactDragEvent) => {
+    if (event.dataTransfer.types.includes('Files')) event.preventDefault()
+  }
+
+  const handleDragLeave = (event: ReactDragEvent) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setDraggingFile(false)
+    }
+  }
+
+  const handleDrop = (event: ReactDragEvent) => {
+    event.preventDefault()
+    setDraggingFile(false)
+    const file = event.dataTransfer.files?.[0]
+    if (!file) return
+    void importImageFile(engine, file).then((ok) => {
+      if (!ok) {
+        toast.show({
+          title: 'Could not open that image',
+          description: 'Please choose a PNG or JPEG file.',
+          variant: 'error',
+        })
+      }
+    })
+  }
 
   const toDocumentPoint = (event: ReactPointerEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current
@@ -249,7 +397,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     }
 
     const point = toDocumentPoint(event)
-    const { activeTool, color, brushSize } = engine.getSnapshot()
+    const { activeTool, color, brushSize, strokeStyle } = engine.getSnapshot()
 
     if (activeTool === 'fill') {
       engine.fillAt(point)
@@ -276,6 +424,8 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
 
     capturePointer(event.pointerId)
     drawingRef.current = true
+    // Lock to straight lines / perfect shapes for the whole gesture.
+    shiftLockRef.current = event.shiftKey
     draftRef.current = isStrokeTool(activeTool)
       ? {
           id: createId(),
@@ -283,6 +433,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
           tool: activeTool,
           color,
           size: brushSize,
+          style: strokeStyle,
           points: [point],
         }
       : {
@@ -291,6 +442,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
           tool: activeTool,
           color,
           size: brushSize,
+          style: strokeStyle,
           start: point,
           end: point,
         }
@@ -306,6 +458,10 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     lastPointerAtRef.current = Date.now()
+    // Live X/Y read-out for the status bar + the brush-size cursor ring.
+    const hoverPoint = toDocumentPoint(event)
+    getCursorPositionStore().set({ x: Math.round(hoverPoint.x), y: Math.round(hoverPoint.y) })
+    setHover(hoverPoint)
     if (cropMode) {
       const start = cropStartRef.current
       if (!start) return
@@ -340,7 +496,29 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
       if (previous && distance(previous, point) < MIN_POINT_DISTANCE) return
       draft.points.push(point)
     } else if (draft.kind === 'shape') {
-      draft.end = point
+      if (shiftLockRef.current) {
+        const dx = point.x - draft.start.x
+        const dy = point.y - draft.start.y
+        if (draft.tool === 'line') {
+          const length = Math.hypot(dx, dy)
+          if (length >= 0.001) {
+            const angle = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4)
+            draft.end = {
+              x: draft.start.x + Math.cos(angle) * length,
+              y: draft.start.y + Math.sin(angle) * length,
+            }
+          }
+        } else {
+          // Perfect square / circle, keeping drag direction.
+          const side = Math.max(Math.abs(dx), Math.abs(dy))
+          draft.end = {
+            x: draft.start.x + Math.sign(dx) * side,
+            y: draft.start.y + Math.sign(dy) * side,
+          }
+        }
+      } else {
+        draft.end = point
+      }
     }
     paint()
   }
@@ -384,6 +562,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
 
     if (!drawingRef.current) return
     drawingRef.current = false
+    shiftLockRef.current = false
     releasePointer(event.pointerId)
 
     const draft = draftRef.current
@@ -392,161 +571,258 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     paint()
   }
 
-  const applyCrop = () => {
+  const applyCrop = useCallback(() => {
     if (!cropRect || cropRect.width < 1 || cropRect.height < 1) return
     engine.cropDocument(cropRect)
     setCrop({ active: cropMode, rect: null })
     onCropComplete?.()
-  }
+  }, [cropRect, cropMode, engine, onCropComplete])
 
-  const cancelCrop = () => {
+  const cancelCrop = useCallback(() => {
     setCrop({ active: cropMode, rect: null })
     onCropComplete?.()
-  }
+  }, [cropMode, onCropComplete])
 
-  const displayWidth = Math.max(1, Math.round(engine.width * view.zoom))
-  const displayHeight = Math.max(1, Math.round(engine.height * view.zoom))
+  // Canvas-level keys: Delete/Backspace removes a selection, Escape deselects
+  // or cancels crop mode. Text inputs keep their own handlers (guarded by
+  // isEditableTarget).
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return
+
+      if (cropMode) {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          cancelCrop()
+        }
+        return
+      }
+
+      if (state.activeTool !== 'select') return
+
+      if (event.key === 'Escape') {
+        setSelection(null)
+        return
+      }
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (selection && selection.width >= 1 && selection.height >= 1) {
+          event.preventDefault()
+          engine.deleteSelection(selection)
+          setSelection(null)
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [cropMode, state.activeTool, selection, engine, cancelCrop])
+
+  const displayWidth = Math.max(1, Math.round(engine.width * scale))
+  const displayHeight = Math.max(1, Math.round(engine.height * scale))
   const cropReady = cropRect !== null && cropRect.width >= 1 && cropRect.height >= 1
+  // Brush-size cursor ring (Krita/MS-Paint pattern) for stroke tools.
+  const showBrushRing =
+    hover !== null && !cropMode && (state.activeTool === 'pencil' || state.activeTool === 'eraser')
+  const brushRingSize = Math.max(3, Math.round(state.brushSize * scale))
 
   return (
     <div className="flex h-full w-full flex-col gap-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <ViewControls
-          zoom={view.zoom}
-          canZoomIn={view.canZoomIn}
-          canZoomOut={view.canZoomOut}
-          onZoomIn={view.zoomIn}
-          onZoomOut={view.zoomOut}
-          onFit={handleFit}
-          onActualSize={view.actualSize}
-        />
+      <div className="flex min-h-9 flex-wrap items-center justify-end gap-2">
         {cropMode ? (
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Crop">
-            <span className="text-sm text-neutral-500">Drag on the canvas to choose an area</span>
-            <button
-              type="button"
-              disabled={!cropReady}
-              onClick={applyCrop}
-              className={ACTION_CLASS}
-            >
+            <span className="text-sm text-surface-500">Drag on the canvas to choose an area</span>
+            <Button size="sm" disabled={!cropReady} onClick={applyCrop}>
               Apply crop
-            </button>
-            <button type="button" onClick={cancelCrop} className={ACTION_CLASS}>
+            </Button>
+            <Button variant="secondary" size="sm" onClick={cancelCrop}>
               Cancel crop
-            </button>
+            </Button>
           </div>
         ) : null}
         {!cropMode && state.activeTool === 'select' ? (
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Selection">
-            <span className="text-sm text-neutral-500">
+            <span className="text-sm text-surface-500">
               {selection
                 ? 'Drag inside the selection to move it'
                 : 'Drag on the canvas to select an area'}
             </span>
             {selection ? (
               <>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="vault-btn-ghost-danger"
                   onClick={() => engine.deleteSelection(selection)}
-                  className={ACTION_CLASS}
                 >
                   Delete
-                </button>
-                <button type="button" onClick={() => setSelection(null)} className={ACTION_CLASS}>
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setSelection(null)}>
                   Deselect
-                </button>
+                </Button>
               </>
             ) : null}
           </div>
         ) : null}
       </div>
 
-      <div
-        ref={viewportRef}
-        className="relative flex-1 overflow-auto rounded-lg border border-neutral-300 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900"
-      >
-        <div className="relative" style={{ width: displayWidth, height: displayHeight }}>
-          <canvas
-            ref={canvasRef}
-            width={engine.width}
-            height={engine.height}
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={viewportRef}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className="absolute inset-0 flex overflow-hidden rounded-xl bg-surface-0"
+        >
+          <div
+            className="relative m-auto block"
             style={{ width: displayWidth, height: displayHeight }}
-            className="block cursor-crosshair touch-none bg-white shadow-sm"
-            role="img"
-            aria-label="Drawing canvas"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={finishStroke}
-            onPointerCancel={finishStroke}
-          />
-
-          {cropMode && cropRect ? (
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute border-2 border-blue-500 bg-blue-500/10"
-              style={{
-                left: cropRect.x * view.zoom,
-                top: cropRect.y * view.zoom,
-                width: cropRect.width * view.zoom,
-                height: cropRect.height * view.zoom,
+          >
+            <canvas
+              ref={canvasRef}
+              width={engine.width}
+              height={engine.height}
+              style={{ width: displayWidth, height: displayHeight }}
+              className="block cursor-default touch-none bg-surface-0"
+              role="img"
+              aria-label="Drawing canvas"
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={finishStroke}
+              onPointerCancel={finishStroke}
+              onPointerLeave={() => {
+                getCursorPositionStore().set(null)
+                setHover(null)
               }}
             />
-          ) : null}
 
-          {!cropMode && selection && state.activeTool === 'select' ? (
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute border-2 border-dashed border-blue-500 bg-blue-500/10"
-              style={{
-                left: selection.x * view.zoom,
-                top: selection.y * view.zoom,
-                width: selection.width * view.zoom,
-                height: selection.height * view.zoom,
-              }}
-            />
-          ) : null}
-
-          {textDraft ? (
-            <div
-              className="absolute z-10 flex items-center gap-1 rounded-md border border-blue-500 bg-white p-1 shadow-lg dark:bg-neutral-900"
-              style={{ left: textDraft.x * view.zoom, top: textDraft.y * view.zoom }}
-            >
-              <input
-                autoFocus
-                type="text"
-                aria-label="Text to add"
-                placeholder="Type and press Enter"
-                value={textDraft.value}
-                onChange={(event) => setTextDraft({ ...textDraft, value: event.target.value })}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault()
-                    commitText()
-                  } else if (event.key === 'Escape') {
-                    event.preventDefault()
-                    setTextDraft(null)
-                  }
+            {showBrushRing ? (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute z-20 rounded-full border-[1.5px] border-black/40"
+                style={{
+                  left: hover.x * scale - brushRingSize / 2,
+                  top: hover.y * scale - brushRingSize / 2,
+                  width: brushRingSize,
+                  height: brushRingSize,
                 }}
-                className="w-40 rounded border border-neutral-300 px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-800"
               />
-              <button type="button" onClick={commitText} className={ACTION_CLASS}>
-                Place text
-              </button>
-              <button type="button" onClick={() => setTextDraft(null)} className={ACTION_CLASS}>
-                Cancel
-              </button>
-            </div>
-          ) : null}
+            ) : null}
 
-          {state.operationCount === 0 && !cropMode && state.activeTool !== 'select' ? (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <p className="rounded bg-white/70 px-3 py-1 text-sm text-neutral-500 dark:bg-neutral-900/70 dark:text-neutral-400">
-                Draw here with the mouse, or use the voice button below
+            {cropMode && cropRect ? (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute rounded-sm border-2 border-brand-500 bg-brand-500/10"
+                style={{
+                  left: cropRect.x * scale,
+                  top: cropRect.y * scale,
+                  width: cropRect.width * scale,
+                  height: cropRect.height * scale,
+                }}
+              />
+            ) : null}
+
+            {!cropMode && selection && state.activeTool === 'select' ? (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute rounded-sm border-2 border-dashed border-brand-500 bg-brand-500/10"
+                style={{
+                  left: selection.x * scale,
+                  top: selection.y * scale,
+                  width: selection.width * scale,
+                  height: selection.height * scale,
+                }}
+              />
+            ) : null}
+
+            {textDraft ? (
+              <div
+                className="absolute z-10 flex items-center gap-1.5 rounded-lg border border-brand-200 bg-surface-0 p-1.5 shadow-raised"
+                style={{ left: textDraft.x * scale, top: textDraft.y * scale }}
+              >
+                <input
+                  autoFocus
+                  type="text"
+                  aria-label="Text to add"
+                  placeholder="Type and press Enter"
+                  value={textDraft.value}
+                  onChange={(event) => setTextDraft({ ...textDraft, value: event.target.value })}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      commitText()
+                    } else if (event.key === 'Escape') {
+                      event.preventDefault()
+                      setTextDraft(null)
+                    }
+                  }}
+                  className="vault-input vault-input--sm w-44"
+                />
+                <Button size="sm" onClick={commitText}>
+                  Place text
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setTextDraft(null)}>
+                  Cancel
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Always centred in the visible playground (never moves). */}
+        {state.operationCount === 0 && !cropMode && state.activeTool !== 'select' ? (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+            <div className="flex max-w-xs flex-col items-center gap-2.5 text-center">
+              <span className="flex size-12 items-center justify-center rounded-xl bg-brand-100 text-brand-700 shadow-soft">
+                <Icon name="brush" size={22} />
+              </span>
+              <p className="font-display text-15 font-semibold tracking-tight text-surface-700">
+                Your canvas is ready
+              </p>
+              <p className="text-13 leading-relaxed text-surface-500">
+                Draw here with the mouse, or use the voice button to paint with your voice.
               </p>
             </div>
-          ) : null}
+          </div>
+        ) : null}
+
+        {/* Clear — neutral icon-only chip pinned to the sheet's corner. */}
+        <div className="absolute right-2 top-2 z-30 flex items-center gap-1 rounded-lg border border-surface-200/80 bg-surface-0/90 p-1 shadow-soft backdrop-blur-sm">
+          <Button
+            variant="ghost"
+            size="xs"
+            aria-label="Clear canvas"
+            title="Clear canvas"
+            disabled={state.operationCount === 0}
+            onClick={() => setConfirmClear(true)}
+          >
+            <Icon name="trash" size={14} />
+          </Button>
         </div>
+
+        {/* Drop target feedback — an image needs a moment to decode, so the
+            overlay confirms the file will land on the document. */}
+        {draggingFile ? (
+          <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-xl bg-brand-500/10">
+            <div className="flex items-center gap-2 rounded-lg border border-brand-300 bg-surface-0 px-4 py-2.5 text-sm font-medium text-brand-800 shadow-raised">
+              <Icon name="image" size={16} />
+              Drop PNG or JPEG to add it
+            </div>
+          </div>
+        ) : null}
       </div>
+
+      {confirmClear ? (
+        <ConfirmDialog
+          title="Clear the canvas?"
+          description="This removes the current drawing. Do you want to continue?"
+          confirmLabel="Clear"
+          onConfirm={() => {
+            engine.clear()
+            setConfirmClear(false)
+          }}
+          onCancel={() => setConfirmClear(false)}
+        />
+      ) : null}
     </div>
   )
 }

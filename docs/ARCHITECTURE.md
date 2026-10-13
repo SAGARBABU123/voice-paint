@@ -42,13 +42,23 @@ React UI
 ```text
 src/
 ├── app/                     App entry
+├── design/                  Vendored Vault UI theme: tokens.css (warm paper +
+│                            indigo), button.css, primitives.css, Inter fonts
 ├── components/
-│   ├── editor/              Layout shell, status bar
+│   ├── editor/              App shell (header/footer), status bar, help
 │   ├── toolbar/             Tool & option controls
+│   ├── canvas/              Canvas workspace, view controls
+│   ├── ui/                  Token-driven primitives: Button, Badge, Card,
+│   │                        Icon, Toast, ConfirmDialog, ResizeDialog
 │   └── voice/               Mic control, transcript, help
 ├── paint/                   engine, renderer, tools, history, export,
-│                            transforms, text, fill, selection
-├── voice/                   (M2) adapters, parser, types
+│                            transforms, text, fill, selection, image
+│                            import, sketch trace (OpenCV.js contour
+│                            pipeline in sketchImage.ts + opencv.ts,
+│                            rough.js rendering in roughSketch.ts,
+│                            pure geometry in sketch.ts, sketch pencil
+│                            presets in sketchStyles.ts)
+├── voice/                   adapters, parser, types
 ├── hooks/
 ├── types/
 └── test/                    Test setup
@@ -81,8 +91,20 @@ type CommandParseResult =
   | { ok: false; reason: 'unknown' | 'ambiguous' | 'missing_parameter'; message: string }
 ```
 
+## UI layer
+
+The visual language is the **Vault UI design system** (warm-paper neutrals, a
+single indigo accent, tight radii, light-from-above elevation, 4px spacing
+grid), vendored rather than installed so the app keeps zero runtime UI
+dependencies. `src/design/tokens.css` exposes the theme as Tailwind v4 tokens;
+`src/design/*.css` carry the kit's button/primitive classes; `src/components/ui`
+wraps them as typed React primitives. All screens compose those primitives — no
+ad-hoc colour, radius or shadow literals — so the look stays consistent and can
+be re-branded from one token block. Light theme only; desktop is the primary
+layout.
+
 ## Decision record
 
 Web-only MVP · browser speech recognition first · small MVP first · no backend ·
 React + TypeScript + Vite + Tailwind · Canvas 2D · deterministic allowlisted
-commands routed through the shared engine.
+commands routed through the shared engine · Vault UI design system for visuals.

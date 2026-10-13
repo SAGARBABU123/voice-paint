@@ -96,6 +96,26 @@ describe('executeCommand', () => {
   })
 })
 
+describe('executeCommand — sketch pencils', () => {
+  it('routes sketch style/weight/detail to the shared engine', async () => {
+    const engine = new PaintEngine()
+    await executeCommand(engine, { type: 'sketch.style.set', style: 'charcoal' })
+    await executeCommand(engine, { type: 'sketch.weight.set', weight: 'darker' })
+    await executeCommand(engine, { type: 'sketch.detail.set', detail: 'more' })
+    expect(engine.getSnapshot()).toMatchObject({
+      sketchStyle: 'charcoal',
+      sketchWeight: 'darker',
+      sketchDetail: 'more',
+    })
+  })
+
+  it('does not touch the document when picking a sketch pencil', async () => {
+    const engine = new PaintEngine()
+    await executeCommand(engine, { type: 'sketch.style.set', style: 'ink' })
+    expect(engine.getSnapshot().operationCount).toBe(0)
+  })
+})
+
 describe('dispatchCommands', () => {
   it('executes safe commands and defers clear for confirmation', async () => {
     const engine = new PaintEngine()

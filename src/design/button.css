@@ -1,0 +1,163 @@
+/**
+ * Vault UI — Button styles.
+ *
+ * Scan-independent CSS (no Tailwind class detection required): sizes scale
+ * height, text, padding, radius and icons together, in every environment
+ * (web dev/build, storybook, external consumers). Colors and shadows read
+ * the theme's CSS variables, so the four Vault themes re-skin buttons too.
+ */
+
+.vault-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.vault-btn:active {
+  transform: scale(0.98);
+}
+
+.vault-btn:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.vault-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--color-surface-0),
+    0 0 0 4px var(--color-brand-500);
+}
+
+.vault-btn svg {
+  width: var(--vault-btn-icon);
+  height: var(--vault-btn-icon);
+  flex-shrink: 0;
+}
+
+/* ------------------------------- variants -------------------------------- */
+
+.vault-btn-primary {
+  background-color: var(--color-brand-600);
+  color: #fff;
+  box-shadow: var(--shadow-soft, 0 1px 2px rgb(16 24 42 / 0.12));
+}
+.vault-btn-primary:hover {
+  background-color: var(--color-brand-500);
+  box-shadow: var(--shadow-raised, 0 1px 2px rgb(16 24 42 / 0.12));
+}
+.vault-btn-primary:active {
+  box-shadow: var(--shadow-pressed, inset 0 1px 3px rgb(16 24 42 / 0.25));
+}
+
+.vault-btn-secondary {
+  background-color: var(--color-surface-0);
+  color: var(--color-surface-700);
+  box-shadow: var(--shadow-soft, 0 1px 2px rgb(16 24 42 / 0.12));
+}
+.vault-btn-secondary:hover {
+  background-color: var(--color-surface-50);
+  box-shadow: var(--shadow-raised, 0 1px 2px rgb(16 24 42 / 0.12));
+}
+.vault-btn-secondary:active {
+  box-shadow: var(--shadow-pressed, inset 0 1px 3px rgb(16 24 42 / 0.25));
+}
+
+.vault-btn-ghost {
+  background-color: transparent;
+  color: var(--color-surface-600);
+}
+.vault-btn-ghost:hover {
+  background-color: var(--color-surface-100);
+}
+.vault-btn-ghost:active {
+  box-shadow: var(--shadow-inset, inset 0 1px 3px rgb(16 24 42 / 0.18));
+}
+
+.vault-btn-danger {
+  background-color: var(--color-danger-500);
+  color: #fff;
+  box-shadow: var(--shadow-soft, 0 1px 2px rgb(16 24 42 / 0.12));
+}
+.vault-btn-danger:hover {
+  background-color: var(--color-danger-400);
+  box-shadow: var(--shadow-raised, 0 1px 2px rgb(16 24 42 / 0.12));
+}
+.vault-btn-danger:active {
+  box-shadow: var(--shadow-pressed, inset 0 1px 3px rgb(16 24 42 / 0.25));
+}
+
+/* -------------------------------- sizes ---------------------------------- */
+/* Each size declares its own text size, height, padding, radius and icon —
+   text is always proportional to the button, never larger than the box.
+   Spacing lives on the 4px grid; radii come from the token table. */
+
+.vault-btn-xs {
+  --vault-btn-icon: 14px;
+  height: 28px;
+  padding: 0 12px;
+  gap: 4px;
+  border-radius: var(--radius-xs, 4px);
+  font-size: 12px;
+}
+
+.vault-btn-sm {
+  --vault-btn-icon: 16px;
+  height: 36px;
+  padding: 0 16px;
+  gap: 8px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 14px;
+}
+
+.vault-btn-md {
+  --vault-btn-icon: 16px;
+  height: 40px;
+  padding: 0 16px;
+  gap: 8px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 14px;
+}
+
+.vault-btn-lg {
+  --vault-btn-icon: 20px;
+  height: 48px;
+  padding: 0 24px;
+  gap: 8px;
+  border-radius: var(--radius-md, 8px);
+  font-size: 16px;
+}
+
+.vault-btn-xl {
+  --vault-btn-icon: 20px;
+  height: 56px;
+  padding: 0 32px;
+  gap: 12px;
+  border-radius: var(--radius-md, 8px);
+  font-size: 18px;
+}
+
+/*.vault-btn { text-align: left; }*/
+/* ----------------- Voice Over Paint additions ----------------------------- */
+
+.vault-btn-ghost-danger {
+  background-color: transparent;
+  color: var(--color-danger-600, #c94f60);
+}
+.vault-btn-ghost-danger:hover {
+  background-color: rgb(229 107 122 / 0.1);
+  color: var(--color-danger-600, #c94f60);
+}
+.vault-btn-ghost-danger:active {
+  box-shadow: var(--shadow-inset, inset 0 1px 3px rgb(63 57 43 / 0.18));
+}

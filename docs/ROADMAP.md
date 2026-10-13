@@ -73,3 +73,52 @@ limitations, passing quality gates.
 - **Phase 15 — Deploy & release pipeline ✅** — GitHub Actions deploys the app
   to Cloudflare Pages and the Whisper worker via `wrangler`; release checklist
   updated.
+- **Phase 16 — Vault UI design system refresh ✅** — vendored the Vault tokens,
+  button and primitive CSS, added token-driven `Button`/`Badge`/`Card`/`Icon`/
+  `Toast` primitives, and restyled the whole app: a proper app header and status
+  footer, grouped toolbar, polished canvas well, restyled voice panel, and
+  Vault-styled confirm/resize dialogs + toasts (replacing native
+  `window.confirm`/`alert`). Follow-up polish: dot-grid workspace mat with a
+  paper-shadowed document sheet, micro-caps toolbar group labels and a custom
+  colour chip, header brand accent + document size read-out, voice unsupported
+  empty-state and a listening level meter, plus `prefers-reduced-motion`
+  support. Follow-up: live cursor X/Y read-out in the status bar and
+  MS-Paint-style brush/font-size presets, plus a header-shell layout: brand +
+  a horizontally-scrollable creative shelf (freeform tools · big shapes group ·
+  colour · size presets · recents) with generous group gaps, a slim
+  document/history/export row, plus pro interactions:
+  brush-size cursor ring, Shift-lock straight lines and perfect shapes, keyboard
+  Delete/Escape on the selection, drag-and-drop image import, JPEG export,
+  window-resize refit, and an autosave-restore skeleton. The canvas promoted to
+  the hero workspace with a richer empty state. Theme library: `data-theme`
+  combos in `src/design/themes.css` — generic gradient chrome (header strip,
+  logo tile, primary buttons, workspace mat, app wash) driven by per-theme
+  gradient variables; combos:
+  Ocean (white + blue → cyan → teal · active), Midnight (dark studio +
+  cyan → violet glow), Sunset (magenta → coral → amber), Emerald
+  (teal → green), Aurora (indigo → violet → rose), and Warm paper
+  (default). A header ThemeSwitcher cycles them live and remembers the choice. Typography:
+  a single Inter type scale (11/13/15/17px tokens) replaces ad-hoc sizes, with
+  display-family headings, tight tracking, tabular numerals and optimized
+  rendering. The Ocean theme is locked as the base default (gradients in the
+  core tokens, no attribute required); alternate combos including the legacy
+  Warm paper stay switchable via the header ThemeSwitcher. Brand signature:
+  transparent artist-palette mark (gradient body, thumb-hole, four paint dots)
+  matching the favicon — no background tile or shape. Workspace & tools: the header slimmed to brand + switcher + shortcuts,
+  and the full kit (tools, a 23-shape MS-Paint gallery incl. arrows, stars,
+  callouts, heart, lightning; colour, size, recents) lives in a vertical rail
+  beside the sheet that collapses to tool icons and expands on hover/focus.
+  Open/export folded into one Export menu (PNG/JPEG). Canvas uses a normal
+  cursor; the empty-state hint is pinned to the visible centre. Sketch trace:
+  upload a photo via the Export menu → grayscale → proper computer-vision
+  edge detection (OpenCV.js: Canny → findContours → approxPolyDP) → real
+  hand-drawn pencil strokes rendered by rough.js (fixed seed, undoable as
+  one step, follows the current colour/pen style) and revealed stroke-by-
+  stroke with a pen cursor that skims the sheet (hand write-order, pen-lift
+  pauses). Five sketch pencils (pencil, charcoal, colour-pencil, ink, hatch)
+  with weight (lighter/normal/darker) and detail (simpler/normal/more) knobs
+  are selectable in the rail and by voice. The OpenCV engine
+  (~15 MB WASM, browser-cached) lazy-loads on first conversion; the pure
+  geometry core (paint/sketch.ts, paint/roughSketch.ts) stays
+  unit-testable without the engine. Behaviour, tests, and accessibility
+  unchanged.

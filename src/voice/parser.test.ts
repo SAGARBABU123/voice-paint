@@ -25,6 +25,68 @@ describe('parseCommand — tool selection', () => {
   })
 })
 
+describe('parseCommand — sketch pencils', () => {
+  it.each([
+    ['sketch it in charcoal', 'charcoal'],
+    ['sketch in ink', 'ink'],
+    ['draw a sketch in pencil', 'pencil'],
+    ['make the sketch hatch', 'hatch'],
+    ['sketch it with colour pencil', 'colour-pencil'],
+    ['sketch it with colored pencils', 'colour-pencil'],
+    ['sketch a crosshatch', 'hatch'],
+  ])('maps "%s" to sketch style %s', (phrase, style) => {
+    expect(commandsOf(parseCommand(phrase))).toEqual([{ type: 'sketch.style.set', style }])
+  })
+
+  it('prefers the full alias over bare pencil', () => {
+    expect(commandsOf(parseCommand('sketch it with coloured pencil'))).toEqual([
+      { type: 'sketch.style.set', style: 'colour-pencil' },
+    ])
+  })
+
+  it('maps weight words to the sketch weight', () => {
+    expect(commandsOf(parseCommand('sketch it darker'))).toEqual([
+      { type: 'sketch.weight.set', weight: 'darker' },
+    ])
+    expect(commandsOf(parseCommand('sketch it lighter'))).toEqual([
+      { type: 'sketch.weight.set', weight: 'lighter' },
+    ])
+    // Scoped synonyms stay sketch-specific: "thicker" outside a sketch
+    // command still means a bigger brush.
+    expect(commandsOf(parseCommand('make the brush thicker'))).toEqual([
+      { type: 'brush.size.adjust', direction: 'larger' },
+    ])
+  })
+
+  it('maps detail words to the sketch detail', () => {
+    expect(commandsOf(parseCommand('sketch it with more detail'))).toEqual([
+      { type: 'sketch.detail.set', detail: 'more' },
+    ])
+    expect(commandsOf(parseCommand('sketch it simpler'))).toEqual([
+      { type: 'sketch.detail.set', detail: 'simpler' },
+    ])
+  })
+
+  it('combines style, weight, and detail in one clause', () => {
+    expect(commandsOf(parseCommand('sketch it in charcoal darker with more detail'))).toEqual([
+      { type: 'sketch.style.set', style: 'charcoal' },
+      { type: 'sketch.weight.set', weight: 'darker' },
+      { type: 'sketch.detail.set', detail: 'more' },
+    ])
+  })
+
+  it('declines sketch intents it cannot map', () => {
+    const failure = failureOf(parseCommand('sketch'))
+    expect(failure.reason).toBe('missing_parameter')
+    expect(failure.message).toMatch(/charcoal/)
+  })
+
+  it('rejects contradictory weight/detail in the same clause', () => {
+    expect(failureOf(parseCommand('sketch it lighter darker')).reason).toBe('ambiguous')
+    expect(failureOf(parseCommand('sketch with more detail simpler')).reason).toBe('ambiguous')
+  })
+})
+
 describe('parseCommand — drawing shapes', () => {
   it.each([
     ['draw a circle', 'ellipse'],

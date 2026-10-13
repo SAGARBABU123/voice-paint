@@ -10,7 +10,7 @@ import {
   MIN_BRUSH_SIZE,
   MIN_FONT_SIZE,
 } from './constants'
-import { exportCanvasAsPng } from './export'
+import { exportCanvasAsImage, exportCanvasAsPng } from './export'
 import { createFillOperation } from './fill'
 import { clamp, clampRectToBounds, type Rect } from './geometry'
 import { History } from './history'
@@ -18,6 +18,14 @@ import { createId } from './id'
 import { placeShapes, type ShapePlacement } from './placement'
 import { createTextOperation } from './text'
 import { createSelectionMask, createSelectionMove } from './selection'
+import {
+  isSketchDetail,
+  isSketchStyle,
+  isSketchWeight,
+  type SketchDetail,
+  type SketchStyle,
+  type SketchWeight,
+} from './sketchStyles'
 import {
   normalizeQuarterTurns,
   rotateOperations,
@@ -27,10 +35,12 @@ import {
 } from './transforms'
 import {
   isPaintTool,
+  isStrokeStyle,
   type PaintOperation,
   type PaintTool,
   type Point,
   type ShapeTool,
+  type StrokeStyle,
 } from './types'
 
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/
@@ -47,6 +57,10 @@ export type PaintSnapshot = {
   color: string
   brushSize: number
   fontSize: number
+  strokeStyle: StrokeStyle
+  sketchStyle: SketchStyle
+  sketchWeight: SketchWeight
+  sketchDetail: SketchDetail
   canUndo: boolean
   canRedo: boolean
   operationCount: number
@@ -83,6 +97,10 @@ export class PaintEngine {
   private color: string
   private brushSize: number
   private fontSize: number
+  private strokeStyle: StrokeStyle = 'solid'
+  private sketchStyle: SketchStyle = 'pencil'
+  private sketchWeight: SketchWeight = 'normal'
+  private sketchDetail: SketchDetail = 'normal'
   private readonly history = new History<DocumentState>()
   private readonly listeners = new Set<() => void>()
   private canvas: HTMLCanvasElement | null = null
@@ -151,6 +169,33 @@ export class PaintEngine {
     const next = clampFontSize(size)
     if (next === this.fontSize) return
     this.fontSize = next
+    this.emit()
+  }
+
+  setStrokeStyle(style: StrokeStyle): void {
+    if (!isStrokeStyle(style) || style === this.strokeStyle) return
+    this.strokeStyle = style
+    this.emit()
+  }
+
+  /** Selects the pencil the next photo sketch is drawn with. */
+  setSketchStyle(style: SketchStyle): void {
+    if (!isSketchStyle(style) || style === this.sketchStyle) return
+    this.sketchStyle = style
+    this.emit()
+  }
+
+  /** Sets how heavy the next photo sketch reads (lighter/normal/darker). */
+  setSketchWeight(weight: SketchWeight): void {
+    if (!isSketchWeight(weight) || weight === this.sketchWeight) return
+    this.sketchWeight = weight
+    this.emit()
+  }
+
+  /** Sets how much detail the next photo sketch keeps (simpler/normal/more). */
+  setSketchDetail(detail: SketchDetail): void {
+    if (!isSketchDetail(detail) || detail === this.sketchDetail) return
+    this.sketchDetail = detail
     this.emit()
   }
 
@@ -275,6 +320,17 @@ export class PaintEngine {
     })
   }
 
+  /** Commits a batch of operations as ONE undoable step (e.g. a sketch). */
+  commitOperations(operations: readonly PaintOperation[]): void {
+    if (operations.length === 0) return
+    const current = this.current
+    this.pushDocument({
+      width: current.width,
+      height: current.height,
+      operations: [...current.operations, ...operations],
+    })
+  }
+
   undo(): boolean {
     if (!this.history.undo()) return false
     this.emit()
@@ -354,6 +410,13 @@ export class PaintEngine {
     await exportCanvasAsPng(this.canvas, filename)
   }
 
+  /** Export as PNG or JPEG. The voice layer keeps calling `exportPng`; this
+   *  is the format-aware UI surface built on the same canvas pipeline. */
+  async exportImage(format: 'png' | 'jpeg' = 'png'): Promise<void> {
+    if (!this.canvas) throw new Error('Canvas is not attached yet.')
+    await exportCanvasAsImage(this.canvas, format)
+  }
+
   private get current(): DocumentState {
     return this.history.last ?? this.initial
   }
@@ -376,6 +439,10 @@ export class PaintEngine {
       color: this.color,
       brushSize: this.brushSize,
       fontSize: this.fontSize,
+      strokeStyle: this.strokeStyle,
+      sketchStyle: this.sketchStyle,
+      sketchWeight: this.sketchWeight,
+      sketchDetail: this.sketchDetail,
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
       operationCount: current.operations.length,

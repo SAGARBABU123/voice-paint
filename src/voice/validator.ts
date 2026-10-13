@@ -1,6 +1,7 @@
 import { MAX_BRUSH_SIZE, MIN_BRUSH_SIZE } from '../paint/constants'
 import { clamp } from '../paint/geometry'
 import { MAX_SHAPES, type ShapePlacement } from '../paint/placement'
+import { isSketchDetail, isSketchStyle, isSketchWeight } from '../paint/sketchStyles'
 import { isPaintTool, isShapeTool } from '../paint/types'
 import type { CommandValidationResult, PaintCommand, ValidationFailureReason } from './types'
 
@@ -96,6 +97,24 @@ function validateCommand(command: PaintCommand): SingleValidation {
 
     case 'canvas.export':
       if (command.format !== 'png') return invalid('Only PNG export is supported.')
+      return { ok: true, command }
+
+    case 'sketch.style.set':
+      if (!isSketchStyle(command.style)) {
+        return invalid(`"${String(command.style)}" is not a sketch style.`)
+      }
+      return { ok: true, command }
+
+    case 'sketch.weight.set':
+      if (!isSketchWeight(command.weight)) {
+        return invalid(`"${String(command.weight)}" is not a sketch weight.`)
+      }
+      return { ok: true, command }
+
+    case 'sketch.detail.set':
+      if (!isSketchDetail(command.detail)) {
+        return invalid(`"${String(command.detail)}" is not a sketch detail level.`)
+      }
       return { ok: true, command }
 
     case 'help.open':
