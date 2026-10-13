@@ -1,33 +1,45 @@
 import { expect, test } from '@playwright/test'
-import { drawStroke, expectOperationCount, statusBar } from './helpers'
+import {
+  clearPersistedProject,
+  drawStroke,
+  expectFooterText,
+  expectOperationCount,
+} from './helpers'
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
+  await page.context().route('**/sw.js', (route) => route.abort())
+  await clearPersistedProject(page)
 })
 
+// History is exercised via the keyboard shortcuts: the tool rail's
+// expand-on-hover animation swaps the DOM under the pointer mid-click, so
+// direct clicks on the rail's undo/redo buttons are unreliable.
 test('draws, then undoes and redoes', async ({ page }) => {
   await expectOperationCount(page, 0)
 
   await drawStroke(page)
   await expectOperationCount(page, 1)
 
-  await page.getByRole('button', { name: 'Undo' }).click()
+  await page.keyboard.press('Control+z')
   await expectOperationCount(page, 0)
 
-  await page.getByRole('button', { name: 'Redo' }).click()
+  await page.keyboard.press('Control+Shift+z')
   await expectOperationCount(page, 1)
 })
 
 test('changes tool, colour and size, then exports a PNG', async ({ page }) => {
-  // The tool rail starts collapsed; hover to reveal the full kit.
+  // The tool rail starts collapsed; hover to reveal the full kit and let its
+  // width animation settle before clicking into it.
   await page.getByRole('toolbar', { name: /more tools/i }).hover()
+  await page.waitForTimeout(400)
 
-  await page.getByRole('button', { name: 'Rectangle' }).click()
-  await expect(page.getByRole('button', { name: 'Rectangle' })).toHaveAttribute(
+  // The shape gallery has several -rectangle tools; match the plain one.
+  await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Rectangle', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
-  await expect(statusBar(page)).toContainText('Rectangle')
+  await expectFooterText(page, 'Rectangle')
 
   await page.getByLabel('Brush size').evaluate((element) => {
     const input = element as HTMLInputElement
@@ -35,13 +47,18 @@ test('changes tool, colour and size, then exports a PNG', async ({ page }) => {
     setter?.call(input, '20')
     input.dispatchEvent(new Event('input', { bubbles: true }))
   })
-  await expect(statusBar(page)).toContainText('Size 20px')
+  await expectFooterText(page, 'Size 20px')
 
   await page.getByRole('button', { name: 'Select color #ef4444' }).click()
-  await expect(statusBar(page)).toContainText('Color #ef4444')
+  await expectFooterText(page, 'Color #ef4444')
 
   await drawStroke(page)
   await expectOperationCount(page, 1)
+
+  // The rail collapses once the mouse leaves it (e.g. during the draw), so
+  // re-open it before the export actions.
+  await page.getByRole('toolbar', { name: /more tools/i }).hover()
+  await page.waitForTimeout(400)
 
   // Export is a single entry with a format menu.
   await page.getByRole('button', { name: 'Export' }).click()

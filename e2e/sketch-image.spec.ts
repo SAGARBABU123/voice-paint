@@ -57,16 +57,18 @@ function contrastPng(width: number, height: number): Buffer {
 }
 
 test('sketches an uploaded photo as hand-drawn strokes', async ({ page }) => {
+  // The first conversion lazy-loads the ~15 MB OpenCV WASM chunk.
+  test.setTimeout(180_000)
+  await page.context().route('**/sw.js', (route) => route.abort())
   await page.goto('/')
 
-  await page.setInputFiles('input[aria-label="Choose photo to sketch"]', {
-    name: 'contrast.png',
-    mimeType: 'image/png',
-    buffer: contrastPng(320, 320),
-  })
+  const png = { name: 'contrast.png', mimeType: 'image/png', buffer: contrastPng(320, 320) }
+  const written = page.getByText('Written by hand')
 
-  // First conversion lazy-loads the OpenCV WASM chunk, so be generous.
-  await expect(page.getByText('Written by hand')).toBeVisible({ timeout: 90_000 })
+  // The first upload lazy-loads the ~15 MB OpenCV WASM chunk; be generous with
+  // the wait (the default 30 s test timeout is far too short for it).
+  await page.setInputFiles('input[aria-label="Choose photo to sketch"]', png)
+  await expect(written).toBeVisible({ timeout: 150_000 })
   await expect(page.getByText(/wrote \d+ stroke/)).toBeVisible()
 
   // The strokes committed as real, undoable history.

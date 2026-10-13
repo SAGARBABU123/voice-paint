@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test'
 
+// Document actions live in the tool rail, which is collapsed until hovered.
+function expandRail(page: import('@playwright/test').Page) {
+  return page.getByRole('toolbar', { name: /more tools/i }).hover()
+}
+
 test('rotates the document and updates the canvas dimensions', async ({ page }) => {
   await page.goto('/')
   const canvas = page.getByLabel('Drawing canvas')
@@ -7,6 +12,7 @@ test('rotates the document and updates the canvas dimensions', async ({ page }) 
   await expect(canvas).toHaveAttribute('width', '960')
   await expect(canvas).toHaveAttribute('height', '720')
 
+  await expandRail(page)
   await page.getByRole('button', { name: 'Rotate right' }).click()
   await expect(canvas).toHaveAttribute('width', '720')
   await expect(canvas).toHaveAttribute('height', '960')
@@ -20,6 +26,7 @@ test('resizes the document via the dialog', async ({ page }) => {
   await page.goto('/')
   const canvas = page.getByLabel('Drawing canvas')
 
+  await expandRail(page)
   await page.getByRole('button', { name: 'Resize' }).click()
   await page.getByLabel('Width').fill('480')
   await page.getByLabel('Height').fill('360')
@@ -33,6 +40,7 @@ test('crops the document from a dragged area', async ({ page }) => {
   await page.goto('/')
   const canvas = page.getByLabel('Drawing canvas')
 
+  await expandRail(page)
   await page.getByRole('button', { name: 'Crop' }).click()
 
   const box = await canvas.boundingBox()

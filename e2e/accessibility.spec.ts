@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
-import { drawStroke, expectOperationCount } from './helpers'
+import { clearPersistedProject, drawStroke, expectOperationCount } from './helpers'
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
+  await clearPersistedProject(page)
 })
 
 test('shows a drawing hint before the first stroke', async ({ page }) => {
@@ -11,7 +11,7 @@ test('shows a drawing hint before the first stroke', async ({ page }) => {
 
 test('supports keyboard shortcuts for tools and history', async ({ page }) => {
   await page.keyboard.press('r')
-  await expect(page.getByRole('button', { name: 'Rectangle' })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: 'Rectangle', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
@@ -64,6 +64,8 @@ test('supports keyboard shortcuts for the text, fill, and select tools', async (
 })
 
 test('traps focus in the resize dialog and restores it on Escape', async ({ page }) => {
+  // Resize lives in the tool rail, which is collapsed until hovered.
+  await page.getByRole('toolbar', { name: /more tools/i }).hover()
   const resizeTrigger = page.getByRole('button', { name: 'Resize', exact: true })
   await resizeTrigger.click()
 

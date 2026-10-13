@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { drawStroke, expectOperationCount } from './helpers'
+import { clearPersistedProject, drawStroke, expectOperationCount } from './helpers'
 
 async function canvasBox(page: Page) {
   const box = await page.getByLabel('Drawing canvas').boundingBox()
@@ -8,7 +8,7 @@ async function canvasBox(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
+  await clearPersistedProject(page)
 })
 
 test('places text with the text tool', async ({ page }) => {
@@ -25,7 +25,7 @@ test('places text with the text tool', async ({ page }) => {
   await expectOperationCount(page, 1)
   await expect(input).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Undo' }).click()
+  await page.keyboard.press('Control+z')
   await expectOperationCount(page, 0)
 })
 
@@ -37,7 +37,7 @@ test('flood-fills from a click and undoes it', async ({ page }) => {
 
   await expectOperationCount(page, 1)
 
-  await page.getByRole('button', { name: 'Undo' }).click()
+  await page.keyboard.press('Control+z')
   await expectOperationCount(page, 0)
 })
 
@@ -64,6 +64,6 @@ test('selects a region and moves it as one undoable step', async ({ page }) => {
   // The stroke plus the mask and patch added by the move.
   await expectOperationCount(page, 3)
 
-  await page.getByRole('button', { name: 'Undo' }).click()
+  await page.keyboard.press('Control+z')
   await expectOperationCount(page, 1)
 })
