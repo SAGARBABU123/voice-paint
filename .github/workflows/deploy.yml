@@ -32,11 +32,14 @@ jobs:
           VITE_WHISPER_LANGUAGE: ${{ secrets.VITE_WHISPER_LANGUAGE }}
       # 'wrangler deploy' publishes the app from the committed root
       # wrangler.jsonc (assets.directory = dist) — Pages is now part of Workers.
+      # Pin wrangler v4: without a local wrangler install, wrangler-action falls
+      # back to an old wrangler (3.x) that cannot read the root assets config.
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
+          wranglerVersion: '4.150.0'
+          command: deploy --config wrangler.jsonc
 
   whisper:
     name: Deploy Whisper worker
@@ -53,4 +56,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4.150.0'
           command: deploy --config whisper-worker/wrangler.toml
