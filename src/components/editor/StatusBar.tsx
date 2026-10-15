@@ -1,7 +1,9 @@
 import { usePaintSnapshot } from '../../hooks/PaintProvider'
 import { useCursorPosition } from '../../hooks/useCursorPosition'
+import { getViewportStore, useViewport } from '../../hooks/useViewport'
 import type { PersistenceStatus } from '../../hooks/useProjectPersistence'
 import { Badge, type BadgeVariant } from '../ui/Badge'
+import { Icon } from '../ui/Icon'
 import { TOOL_LABELS } from '../toolLabels'
 
 const PERSISTENCE_META: Record<PersistenceStatus, { label: string; variant: BadgeVariant }> = {
@@ -21,6 +23,7 @@ type StatusBarProps = {
 export function StatusBar({ persistence }: StatusBarProps = {}) {
   const state = usePaintSnapshot()
   const cursor = useCursorPosition()
+  const view = useViewport()
   const operationLabel = `${state.operationCount} operation${state.operationCount === 1 ? '' : 's'}`
   const persistenceMeta = persistence ? PERSISTENCE_META[persistence] : null
   const cursorLabel = cursor ? `X ${cursor.x} · Y ${cursor.y}` : 'X — · Y —'
@@ -45,6 +48,41 @@ export function StatusBar({ persistence }: StatusBarProps = {}) {
         <Badge>{operationLabel}</Badge>
       </div>
       <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1">
+          <div className="flex items-center overflow-hidden rounded-md border border-surface-200">
+            <button
+              type="button"
+              aria-label="Zoom out"
+              title="Zoom out (Ctrl+-)"
+              disabled={!view.canZoomOut}
+              onClick={() => getViewportStore().zoomOut()}
+              className="inline-flex size-6 items-center justify-center text-surface-500 transition-colors duration-150 hover:bg-surface-100 hover:text-surface-800 disabled:opacity-40"
+            >
+              <Icon name="zoom-out" size={13} />
+            </button>
+            <span className="w-11 text-center text-xs tabular-nums text-surface-600">
+              {view.percent}%
+            </span>
+            <button
+              type="button"
+              aria-label="Zoom in"
+              title="Zoom in (Ctrl++)"
+              disabled={!view.canZoomIn}
+              onClick={() => getViewportStore().zoomIn()}
+              className="inline-flex size-6 items-center justify-center text-surface-500 transition-colors duration-150 hover:bg-surface-100 hover:text-surface-800 disabled:opacity-40"
+            >
+              <Icon name="zoom-in" size={13} />
+            </button>
+          </div>
+          <button
+            type="button"
+            title="Zoom to fit (Ctrl+0)"
+            onClick={() => getViewportStore().fit()}
+            className="rounded-md px-1.5 py-0.5 text-xs font-medium text-surface-500 transition-colors duration-150 hover:bg-surface-100 hover:text-surface-800"
+          >
+            Fit
+          </button>
+        </div>
         <span
           aria-hidden="true"
           title="Document size"

@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
 import { getCursorPositionStore } from '../../hooks/useCursorPosition'
+import { getViewportStore } from '../../hooks/useViewport'
 import { isEditableTarget } from '../../keyboard/shortcuts'
 import {
   activeStrokeIndex,
@@ -112,6 +113,9 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   // Permanent fit-to-width: the sheet always spans the playground's full
   // width and never zooms in/out on its own.
   const [scale, setScale] = useState(1)
+  // User zoom (multiplier over the fit scale) and pan offset in CSS px.
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState<Point>({ x: 0, y: 0 })
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const viewportRef = useRef<HTMLDivElement | null>(null)
@@ -130,6 +134,15 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   const prevOpCountRef = useRef<number | null>(null)
   const lastPointerAtRef = useRef(0)
   const animFrameRef = useRef<number | null>(null)
+  // Space-drag / middle-drag panning.
+  const spaceDownRef = useRef(false)
+  const panGestureRef = useRef<{
+    pointerId: number
+    startX: number
+    startY: number
+    originX: number
+    originY: number
+  } | null>(null)
   const [textDraft, setTextDraft] = useState<{ x: number; y: number; value: string } | null>(null)
   const [selection, setSelection] = useState<Rect | null>(null)
   const [draftTool, setDraftTool] = useState(state.activeTool)
@@ -139,6 +152,8 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   })
   const [hover, setHover] = useState<Point | null>(null)
   const [draggingFile, setDraggingFile] = useState(false)
+  // True while Space is held (pan affordance cursor).
+  const [spaceHeld, setSpaceHeld] = useState(false)
   // Clear lives on the sheet's corner, so its confirmation dialog lives here too.
   const [confirmClear, setConfirmClear] = useState(false)
 
@@ -318,6 +333,132 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     }
   }, [engine])
 
+  // --- View zoom & pan ---------------------------------------------------
+  const viewScale = scale * zoom
+  const clampZoom = useCallback(
+    (next: number) => {
+      const min = 0.1 / scale
+      const max = 64 / scale
+      return Math.max(min, Math.min(max, next))
+    },
+    [scale],
+  )
+
+  const zoomAround = useCallback(
+    (factor: number, clientX: number, clientY: number) => {
+      const viewport = viewportRef.current
+      if (!viewport) return
+      setZoom((current) => {
+        const next = clampZoom(current * factor)
+        const applied = next / current
+        const rect = viewport.getBoundingClientRect()
+        const vx = rect.left + rect.width / 2
+        const vy = rect.top + rect.height / 2
+        // Keep the point under the cursor fixed while the sheet scales.
+        setPan((p) => ({
+          x: applied * p.x + (1 - applied) * (clientX - vx),
+          y: applied * p.y + (1 - applied) * (clientY - vy),
+        }))
+        return next
+      })
+    },
+    [clampZoom],
+  )
+  const zoomAroundRef = useRef(zoomAround)
+  useEffect(() => {
+    zoomAroundRef.current = zoomAround
+  }, [zoomAround])
+
+  const zoomBy = useCallback(
+    (factor: number) => {
+      const rect = viewportRef.current?.getBoundingClientRect()
+      if (rect) zoomAround(factor, rect.left + rect.width / 2, rect.top + rect.height / 2)
+    },
+    [zoomAround],
+  )
+
+  const fitView = useCallback(() => {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
+  }, [])
+
+  const actualSize = useCallback(() => {
+    setZoom((current) => {
+      const next = clampZoom(1 / scale)
+      const applied = next / current
+      setPan((p) => ({ x: applied * p.x, y: applied * p.y }))
+      return next
+    })
+  }, [clampZoom, scale])
+
+  // Publish the zoom level for the status bar and expose the zoom commands.
+  useEffect(() => {
+    getViewportStore().setSnapshot({
+      percent: Math.round(viewScale * 100),
+      canZoomIn: viewScale < 64 - 1e-6,
+      canZoomOut: viewScale > 0.1 + 1e-6,
+    })
+  }, [viewScale])
+
+  useEffect(() => {
+    return getViewportStore().registerCommands({
+      zoomIn: () => zoomBy(1.25),
+      zoomOut: () => zoomBy(1 / 1.25),
+      fit: fitView,
+      actualSize,
+    })
+  }, [zoomBy, fitView, actualSize])
+
+  // Wheel zooms around the cursor (non-passive so we can prevent the default).
+  useEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport) return
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault()
+      zoomAroundRef.current(event.deltaY < 0 ? 1.1 : 1 / 1.1, event.clientX, event.clientY)
+    }
+    viewport.addEventListener('wheel', onWheel, { passive: false })
+    return () => viewport.removeEventListener('wheel', onWheel)
+  }, [])
+
+  // Space-drag panning + zoom keyboard shortcuts.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return
+      if (event.code === 'Space' && !event.repeat) {
+        spaceDownRef.current = true
+        setSpaceHeld(true)
+        return
+      }
+      if (!event.ctrlKey && !event.metaKey) return
+      if (event.key === '0') {
+        event.preventDefault()
+        fitView()
+      } else if (event.key === '1') {
+        event.preventDefault()
+        actualSize()
+      } else if (event.key === '=' || event.key === '+') {
+        event.preventDefault()
+        zoomBy(1.25)
+      } else if (event.key === '-') {
+        event.preventDefault()
+        zoomBy(1 / 1.25)
+      }
+    }
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        spaceDownRef.current = false
+        setSpaceHeld(false)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+    }
+  }, [actualSize, fitView, zoomBy])
+
   useEffect(() => {
     if (cropMode) return
     cropStartRef.current = null
@@ -386,6 +527,19 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     lastPointerAtRef.current = Date.now()
+    // Space-drag (or middle-drag) pans the view instead of drawing.
+    if (spaceDownRef.current || (event.pointerType === 'mouse' && event.button === 1)) {
+      event.preventDefault()
+      capturePointer(event.pointerId)
+      panGestureRef.current = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: pan.x,
+        originY: pan.y,
+      }
+      return
+    }
     if (event.pointerType === 'mouse' && event.button !== 0) return
 
     if (cropMode) {
@@ -458,6 +612,14 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     lastPointerAtRef.current = Date.now()
+    const gesture = panGestureRef.current
+    if (gesture) {
+      setPan({
+        x: gesture.originX + (event.clientX - gesture.startX),
+        y: gesture.originY + (event.clientY - gesture.startY),
+      })
+      return
+    }
     // Live X/Y read-out for the status bar + the brush-size cursor ring.
     const hoverPoint = toDocumentPoint(event)
     getCursorPositionStore().set({ x: Math.round(hoverPoint.x), y: Math.round(hoverPoint.y) })
@@ -525,6 +687,12 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
 
   const finishStroke = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     lastPointerAtRef.current = Date.now()
+    const gesture = panGestureRef.current
+    if (gesture) {
+      panGestureRef.current = null
+      releasePointer(event.pointerId)
+      return
+    }
     if (cropMode) {
       cropStartRef.current = null
       releasePointer(event.pointerId)
@@ -616,13 +784,13 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [cropMode, state.activeTool, selection, engine, cancelCrop])
 
-  const displayWidth = Math.max(1, Math.round(engine.width * scale))
-  const displayHeight = Math.max(1, Math.round(engine.height * scale))
+  const displayWidth = Math.max(1, Math.round(engine.width * viewScale))
+  const displayHeight = Math.max(1, Math.round(engine.height * viewScale))
   const cropReady = cropRect !== null && cropRect.width >= 1 && cropRect.height >= 1
   // Brush-size cursor ring (Krita/MS-Paint pattern) for stroke tools.
   const showBrushRing =
     hover !== null && !cropMode && (state.activeTool === 'pencil' || state.activeTool === 'eraser')
-  const brushRingSize = Math.max(3, Math.round(state.brushSize * scale))
+  const brushRingSize = Math.max(3, Math.round(state.brushSize * viewScale))
 
   return (
     <div className="flex h-full w-full flex-col gap-2">
@@ -671,11 +839,17 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className="absolute inset-0 flex overflow-hidden bg-surface-200"
+          className={`absolute inset-0 flex overflow-hidden bg-surface-200 ${
+            spaceHeld ? 'cursor-grab' : ''
+          }`}
         >
           <div
             className="relative m-auto block shadow-raised ring-1 ring-surface-300/70"
-            style={{ width: displayWidth, height: displayHeight }}
+            style={{
+              width: displayWidth,
+              height: displayHeight,
+              transform: `translate(${pan.x}px, ${pan.y}px)`,
+            }}
           >
             <canvas
               ref={canvasRef}
@@ -700,8 +874,8 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
                 aria-hidden="true"
                 className="pointer-events-none absolute z-20 rounded-full border-[1.5px] border-black/40"
                 style={{
-                  left: hover.x * scale - brushRingSize / 2,
-                  top: hover.y * scale - brushRingSize / 2,
+                  left: hover.x * viewScale - brushRingSize / 2,
+                  top: hover.y * viewScale - brushRingSize / 2,
                   width: brushRingSize,
                   height: brushRingSize,
                 }}
@@ -713,10 +887,10 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
                 aria-hidden="true"
                 className="pointer-events-none absolute rounded-sm border-2 border-brand-500 bg-brand-500/10"
                 style={{
-                  left: cropRect.x * scale,
-                  top: cropRect.y * scale,
-                  width: cropRect.width * scale,
-                  height: cropRect.height * scale,
+                  left: cropRect.x * viewScale,
+                  top: cropRect.y * viewScale,
+                  width: cropRect.width * viewScale,
+                  height: cropRect.height * viewScale,
                 }}
               />
             ) : null}
@@ -726,10 +900,10 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
                 aria-hidden="true"
                 className="pointer-events-none absolute rounded-sm border-2 border-dashed border-brand-500 bg-brand-500/10"
                 style={{
-                  left: selection.x * scale,
-                  top: selection.y * scale,
-                  width: selection.width * scale,
-                  height: selection.height * scale,
+                  left: selection.x * viewScale,
+                  top: selection.y * viewScale,
+                  width: selection.width * viewScale,
+                  height: selection.height * viewScale,
                 }}
               />
             ) : null}
@@ -737,7 +911,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
             {textDraft ? (
               <div
                 className="absolute z-10 flex items-center gap-1.5 rounded-lg border border-brand-200 bg-surface-0 p-1.5 shadow-raised"
-                style={{ left: textDraft.x * scale, top: textDraft.y * scale }}
+                style={{ left: textDraft.x * viewScale, top: textDraft.y * viewScale }}
               >
                 <input
                   autoFocus
