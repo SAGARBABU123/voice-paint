@@ -16,13 +16,14 @@ export type ToolbarProps = {
 }
 
 function headerToolClass(active: boolean): string {
-  // Flat, no card: bigger icons, tinted text only. Weight also changes on the
-  // active tool so state is never communicated by colour alone.
+  // Tool chip: brand tint when active, neutral otherwise. Weight also changes
+  // on the active tool so state is never communicated by colour alone.
   return cn(
-    'inline-flex h-10 items-center gap-2 px-2 text-13 whitespace-nowrap transition-colors duration-150',
+    'inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-13 whitespace-nowrap transition-colors duration-150',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1',
-    'hover:bg-transparent hover:opacity-80',
-    active ? 'font-semibold text-brand-700' : 'font-medium text-surface-600 hover:text-surface-900',
+    active
+      ? 'bg-brand-50 font-semibold text-brand-700'
+      : 'font-medium text-surface-600 hover:bg-surface-100 hover:text-surface-900',
   )
 }
 
@@ -42,50 +43,41 @@ export function Toolbar({ onToggleShortcuts, shortcutsOpen = false }: ToolbarPro
   const fillPercent = ((currentSize - minSize) / (maxSize - minSize)) * 100
 
   return (
-    <header className="relative flex h-16 shrink-0 items-center gap-3 border-b border-surface-200 bg-surface-0 px-3 lg:px-5">
-      <div className="flex shrink-0 items-center gap-2.5">
-        <BrandMark size={40} />
-        <div className="min-w-0 leading-tight">
-          <h1 className="truncate font-display text-base font-semibold leading-tight tracking-[-0.02em] text-surface-900">
-            Voice Over Paint
-          </h1>
-          <p className="hidden truncate text-xs tracking-[0.01em] text-surface-500 xl:block">
-            Draw naturally. Stay in control.
-          </p>
-        </div>
+    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-surface-200 bg-surface-0 px-3">
+      <div className="flex shrink-0 items-center gap-2 border-r border-surface-200 pr-3">
+        <BrandMark size={26} />
+        <h1 className="hidden whitespace-nowrap font-display text-13 font-semibold tracking-[-0.01em] text-surface-900 sm:block">
+          Voice Over Paint
+        </h1>
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        {/* Pencil hosts the pen-style dropdown. Kept OUTSIDE the scrollable
-            strip so its popover is never clipped (overflow-x-auto clips). */}
+      <div
+        className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
+        role="toolbar"
+        aria-label="Drawing tools"
+      >
+        {TOOLS_FREEFORM.filter((tool) => tool !== 'pencil').map((tool) => (
+          <button
+            key={tool}
+            type="button"
+            aria-pressed={state.activeTool === tool}
+            title={TOOL_LABELS[tool]}
+            className={headerToolClass(state.activeTool === tool)}
+            onClick={() => engine.setTool(tool)}
+          >
+            <Icon name={TOOL_ICONS[tool]} size={17} />
+            {TOOL_LABELS[tool]}
+          </button>
+        ))}
         <PenStyleMenu />
-        <div
-          className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto"
-          role="toolbar"
-          aria-label="Drawing tools"
-        >
-          {TOOLS_FREEFORM.filter((tool) => tool !== 'pencil').map((tool) => (
-            <button
-              key={tool}
-              type="button"
-              aria-pressed={state.activeTool === tool}
-              title={TOOL_LABELS[tool]}
-              className={headerToolClass(state.activeTool === tool)}
-              onClick={() => engine.setTool(tool)}
-            >
-              <Icon name={TOOL_ICONS[tool]} size={18} />
-              {TOOL_LABELS[tool]}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Brush / font size — brush icon + slider + value, no words, no presets. */}
-      <div className="flex shrink-0 items-center gap-2 border-l border-surface-200 pl-3 lg:pl-4">
+      {/* Brush / font size — icon + slider + value, no words, no presets. */}
+      <div className="flex shrink-0 items-center gap-2 border-l border-surface-200 pl-3">
         <label htmlFor="vop-header-size" className="sr-only">
           {sizeLabel}
         </label>
-        <Icon name="brush" size={17} className="shrink-0 text-surface-500" aria-hidden="true" />
+        <Icon name="brush" size={16} className="shrink-0 text-surface-500" aria-hidden="true" />
         <input
           id="vop-header-size"
           type="range"
@@ -93,7 +85,7 @@ export function Toolbar({ onToggleShortcuts, shortcutsOpen = false }: ToolbarPro
           max={maxSize}
           value={currentSize}
           title={`${sizeLabel} ( - / + )`}
-          className="vault-slider w-28 lg:w-36"
+          className="vault-slider w-24 lg:w-32"
           style={{ '--vault-slider-fill': `${fillPercent}%` } as CSSProperties}
           onChange={(event) => {
             const value = Number(event.target.value)
@@ -106,7 +98,7 @@ export function Toolbar({ onToggleShortcuts, shortcutsOpen = false }: ToolbarPro
         </span>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1 border-l border-surface-200 pl-3">
         <ThemeSwitcher />
         <Button
           variant="ghost"

@@ -74,13 +74,12 @@ export function VoicePanel({ adapter }: VoicePanelProps = {}) {
           title={voice.isListening ? 'Stop voice control' : 'Start voice control'}
           onClick={voice.isListening ? voice.stop : voice.start}
           className={cn(
-            'relative flex size-20 items-center justify-center rounded-full transition-all duration-200',
-            'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2',
+            'relative flex size-14 items-center justify-center rounded-full transition-colors duration-150',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2',
             'disabled:cursor-not-allowed disabled:opacity-45',
             voice.isListening
-              ? 'bg-danger-600 text-white shadow-[0_10px_26px_rgba(201,79,96,0.45)]'
-              : 'vop-gradient-accent text-white shadow-[0_10px_26px_rgba(30,102,214,0.35)]',
-            'hover:scale-[1.05] active:scale-95',
+              ? 'bg-danger-600 text-white shadow-soft'
+              : 'bg-brand-600 text-white shadow-soft hover:bg-brand-700 active:scale-[0.98]',
           )}
         >
           {voice.isListening ? (

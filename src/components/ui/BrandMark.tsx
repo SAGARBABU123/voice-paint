@@ -24,7 +24,7 @@ export function BrandMark({ size = 40, className }: BrandMarkProps = {}) {
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
-      className={cn('shrink-0 drop-shadow-[0_2px_4px_rgba(15,47,94,0.28)]', className)}
+      className={cn('shrink-0', className)}
     >
       <defs>
         <linearGradient id={bodyId} x1="0" y1="1" x2="1" y2="0">

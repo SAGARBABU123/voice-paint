@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type FocusEvent as ReactFocusEvent } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
 import { useRecentColors } from '../../hooks/useRecentColors'
 import { COLOR_PALETTE } from '../../paint/constants'
@@ -87,7 +87,7 @@ export function ToolbarRail({ cropMode = false, onToggleCrop }: ToolbarRailProps
   const sketchFileInputRef = useRef<HTMLInputElement | null>(null)
   const isTextTool = state.activeTool === 'text'
   const { colors: recentColors, clear: clearRecentColors } = useRecentColors()
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const [exportOpen, setExportOpen] = useState(false)
   const currentSize = isTextTool ? state.fontSize : state.brushSize
 
@@ -181,16 +181,6 @@ export function ToolbarRail({ cropMode = false, onToggleCrop }: ToolbarRailProps
     const file = event.target.files?.[0]
     event.target.value = ''
     if (file) void handleSketchFile(file)
-  }
-
-  const handleBlur = (event: ReactFocusEvent<HTMLDivElement>) => {
-    // Keep expanded while an open menu needs the rail; and while focus moves
-    // inside the rail (jsdom reports a null relatedTarget, so use
-    // activeElement as the fallback).
-    if (exportOpen) return
-    const next = (event.relatedTarget ?? document.activeElement) as Node | null
-    if (next instanceof Node && event.currentTarget.contains(next)) return
-    setExpanded(false)
   }
 
   /** Compact icon-only button used by the collapsed strip. */
@@ -517,16 +507,26 @@ export function ToolbarRail({ cropMode = false, onToggleCrop }: ToolbarRailProps
     <div
       role="toolbar"
       aria-label="More tools"
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
-      onFocus={() => setExpanded(true)}
-      onBlur={handleBlur}
       className={cn(
         'relative flex shrink-0 flex-col overflow-hidden border-r border-surface-200 bg-surface-0 transition-[width] duration-200 ease-out',
-        expanded ? 'w-64' : 'w-[54px]',
+        expanded ? 'w-60' : 'w-[52px]',
       )}
     >
       {expanded ? expandedContent : collapsedStrip}
+
+      {/* Pin toggle: docked tool panel instead of hover-magic. */}
+      <div className="flex h-8 shrink-0 items-center justify-end border-t border-surface-100 px-2">
+        <button
+          type="button"
+          title={expanded ? 'Collapse tools' : 'Expand tools'}
+          aria-label={expanded ? 'Collapse tools' : 'Expand tools'}
+          aria-pressed={expanded}
+          onClick={() => setExpanded((open) => !open)}
+          className="inline-flex size-6 items-center justify-center rounded-md text-surface-400 transition-colors duration-150 hover:bg-surface-100 hover:text-surface-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+        >
+          <Icon name="panel" size={14} />
+        </button>
+      </div>
 
       <input
         ref={fileInputRef}

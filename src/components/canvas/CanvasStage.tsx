@@ -297,16 +297,16 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   }, [engine, paint, state.revision])
 
   // The canvas IS the playground: plain white sheet covering the whole div.
-  // Scale uses cover (max) so the sheet fills every pixel — the longer axis
-  // overflows silently and is cropped by overflow-hidden (no scrollbars).
+  // Fit the whole sheet inside the workspace with a small margin, so the user
+  // always sees the entire canvas (a paint app shows the full artboard).
   useLayoutEffect(() => {
     const viewport = viewportRef.current
     if (!viewport) return
     const compute = () => {
-      const width = viewport.clientWidth
-      const height = viewport.clientHeight
-      if (width <= 0 || height <= 0) return
-      setScale(Math.max(0.05, Math.max(width / engine.width, height / engine.height)))
+      const margin = 48
+      const width = Math.max(1, viewport.clientWidth - margin)
+      const height = Math.max(1, viewport.clientHeight - margin)
+      setScale(Math.max(0.05, Math.min(width / engine.width, height / engine.height)))
     }
     compute()
     const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(compute) : null
@@ -671,10 +671,10 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className="absolute inset-0 flex overflow-hidden rounded-xl bg-surface-0"
+          className="absolute inset-0 flex overflow-hidden bg-surface-200"
         >
           <div
-            className="relative m-auto block"
+            className="relative m-auto block shadow-raised ring-1 ring-surface-300/70"
             style={{ width: displayWidth, height: displayHeight }}
           >
             <canvas
