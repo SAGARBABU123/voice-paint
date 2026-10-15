@@ -23,10 +23,10 @@ describe('createSnapshot', () => {
 
     const snapshot = createSnapshot(engine)
 
-    expect(snapshot.version).toBe(1)
+    expect(snapshot.version).toBe(2)
     expect(snapshot.width).toBe(960)
     expect(snapshot.height).toBe(720)
-    expect(snapshot.operations.map((operation) => operation.id)).toEqual(['a'])
+    expect(snapshot.layers[0].operations.map((operation) => operation.id)).toEqual(['a'])
   })
 
   it('deep-copies operations so later edits cannot mutate the snapshot', () => {
@@ -35,7 +35,7 @@ describe('createSnapshot', () => {
     const original = engine.getOperations()[0]
 
     const snapshot = createSnapshot(engine)
-    const captured = snapshot.operations[0]
+    const captured = snapshot.layers[0].operations[0]
 
     expect(captured).not.toBe(original)
     if (original?.kind === 'stroke' && captured?.kind === 'stroke') {

@@ -36,6 +36,11 @@ export async function clearPersistedProject(page: Page): Promise<void> {
         request.onerror = () => reject(request.error)
       })
       try {
+        // A freshly-created database may not have the store yet (the app
+        // creates it on its first save); nothing to clear in that case.
+        if (!Array.from(database.objectStoreNames).includes(storeName)) {
+          return
+        }
         const transaction = database.transaction(storeName, 'readwrite')
         const store = transaction.objectStore(storeName)
         store.clear()

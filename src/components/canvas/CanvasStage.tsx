@@ -181,13 +181,19 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     const previews = extraPreviewRef.current
     const animating =
       previews.length > 0 ? new Set(previews.map((item) => item.operation.id)) : null
-    const operations = animating
-      ? engine.getOperations().filter((operation) => !animating.has(operation.id))
-      : engine.getOperations()
+    const layers = engine.getLayers()
+    const activeLayerId = engine.getActiveLayerId()
     renderScene(context, {
       width: engine.width,
       height: engine.height,
-      operations,
+      layers: layers.map((layer) => ({
+        operations: animating
+          ? layer.operations.filter((operation) => !animating.has(operation.id))
+          : layer.operations,
+        visible: layer.visible,
+        opacity: layer.opacity,
+      })),
+      previewLayerIndex: layers.findIndex((layer) => layer.id === activeLayerId),
       preview: previews.length > 0 ? previews : draftRef.current,
       background: engine.background,
       resolveImage: getCachedImage,
@@ -293,10 +299,11 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     }
   }, [])
 
-  // Decode any newly imported images before repainting.
+  // Decode any newly imported images (on any layer) before repainting.
   useEffect(() => {
     const pending = engine
-      .getOperations()
+      .getLayers()
+      .flatMap((layer) => layer.operations)
       .filter(isImageOperation)
       .map((operation) => operation.dataUrl)
       .filter((dataUrl) => getCachedImage(dataUrl) === null)

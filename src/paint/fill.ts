@@ -31,7 +31,7 @@ export function createFillOperation(
   renderScene(context, {
     width: documentWidth,
     height: documentHeight,
-    operations,
+    layers: [{ operations }],
     resolveImage: getCachedImage,
   })
 

@@ -264,7 +264,7 @@ describe('renderScene', () => {
     renderScene(ctx, {
       width: 100,
       height: 50,
-      operations: [shape('line')],
+      layers: [{ operations: [shape('line')] }],
       preview: shape('ellipse'),
     })
 
@@ -283,7 +283,7 @@ describe('renderScene', () => {
     renderScene(ctx, {
       width: 10,
       height: 10,
-      operations: [IMAGE_OPERATION],
+      layers: [{ operations: [IMAGE_OPERATION] }],
       resolveImage: () => source,
     })
     expect(methods(ctx)).toContain('drawImage')
@@ -294,7 +294,7 @@ describe('renderScene', () => {
     renderScene(ctx, {
       width: 10,
       height: 10,
-      operations: [],
+      layers: [{ operations: [] }],
       preview: [{ operation: shape('line'), alpha: 0.5 }, { operation: shape('ellipse') }],
     })
     expect(methods(ctx)).toContain('lineTo')
@@ -303,7 +303,7 @@ describe('renderScene', () => {
 
   it('renders without a preview', () => {
     const ctx = createFakeContext()
-    renderScene(ctx, { width: 10, height: 10, operations: [] })
+    renderScene(ctx, { width: 10, height: 10, layers: [{ operations: [] }] })
     expect(methods(ctx)).not.toContain('ellipse')
     expect(methods(ctx)).not.toContain('stroke')
   })

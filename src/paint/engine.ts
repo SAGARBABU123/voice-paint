@@ -15,6 +15,16 @@ import { createFillOperation } from './fill'
 import { clamp, clampRectToBounds, type Rect } from './geometry'
 import { History } from './history'
 import { createId } from './id'
+import {
+  activeLayer,
+  clampLayerOpacity,
+  createLayer,
+  layerById,
+  mapLayerOperations,
+  totalOperations,
+  withLayerOperations,
+  type Layer,
+} from './layers'
 import { placeShapes, type ShapePlacement } from './placement'
 import { DEFAULT_FONT_FAMILY, createTextOperation, isFontFamily, type FontFamily } from './text'
 import { createSelectionMask, createSelectionMove } from './selection'
@@ -45,11 +55,21 @@ import {
 
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/
 
-/** A full, immutable document revision: dimensions plus the operations on it. */
+/** A full, immutable document revision: dimensions plus its layers. */
 export type DocumentState = {
   width: number
   height: number
-  operations: PaintOperation[]
+  layers: Layer[]
+  activeLayerId: string
+}
+
+/** Lightweight layer info for the snapshot (no operation payloads). */
+export type LayerSummary = {
+  id: string
+  name: string
+  visible: boolean
+  opacity: number
+  operationCount: number
 }
 
 export type PaintSnapshot = {
@@ -72,6 +92,8 @@ export type PaintSnapshot = {
   canUndo: boolean
   canRedo: boolean
   operationCount: number
+  layers: LayerSummary[]
+  activeLayerId: string
   revision: number
   documentWidth: number
   documentHeight: number
@@ -125,10 +147,12 @@ export class PaintEngine {
 
   constructor(options: PaintEngineOptions = {}) {
     this.background = options.background ?? BACKGROUND_COLOR
+    const firstLayer = createLayer('Layer 1')
     this.initial = {
       width: positiveInt(options.width ?? DOCUMENT_WIDTH, DOCUMENT_WIDTH),
       height: positiveInt(options.height ?? DOCUMENT_HEIGHT, DOCUMENT_HEIGHT),
-      operations: [],
+      layers: [firstLayer],
+      activeLayerId: firstLayer.id,
     }
     this.color = normalizeColor(options.color) ?? DEFAULT_COLOR
     this.brushSize = clampBrushSize(options.brushSize ?? DEFAULT_BRUSH_SIZE)
@@ -153,8 +177,34 @@ export class PaintEngine {
 
   getSnapshot = (): PaintSnapshot => this.snapshot
 
+  /** Operations on the active layer (the tools' drawing target). */
   getOperations(): readonly PaintOperation[] {
-    return this.current.operations
+    return this.activeOperations()
+  }
+
+  /** All layers, bottom-most first. */
+  getLayers(): readonly Layer[] {
+    return this.current.layers
+  }
+
+  getActiveLayerId(): string {
+    return this.current.activeLayerId
+  }
+
+  private activeOperations(): readonly PaintOperation[] {
+    const current = this.current
+    return activeLayer(current.layers, current.activeLayerId).operations
+  }
+
+  /** Pushes a new document revision with the active layer's ops replaced. */
+  private pushActiveOperations(operations: readonly PaintOperation[]): void {
+    const current = this.current
+    this.pushDocument({
+      width: current.width,
+      height: current.height,
+      layers: withLayerOperations(current.layers, current.activeLayerId, operations),
+      activeLayerId: current.activeLayerId,
+    })
   }
 
   attachCanvas(canvas: HTMLCanvasElement | null): void {
@@ -294,7 +344,7 @@ export class PaintEngine {
   fillAt(point: Point): boolean {
     const current = this.current
     const operation = createFillOperation(
-      current.operations,
+      this.activeOperations(),
       current.width,
       current.height,
       point,
@@ -361,11 +411,7 @@ export class PaintEngine {
     const current = this.current
     const mask = createSelectionMask(current.width, current.height, this.background, rect)
     if (!mask) return false
-    this.pushDocument({
-      width: current.width,
-      height: current.height,
-      operations: [...current.operations, mask],
-    })
+    this.pushActiveOperations([...this.activeOperations(), mask])
     return true
   }
 
@@ -378,7 +424,7 @@ export class PaintEngine {
 
     const current = this.current
     const move = createSelectionMove(
-      current.operations,
+      this.activeOperations(),
       current.width,
       current.height,
       this.background,
@@ -387,32 +433,18 @@ export class PaintEngine {
       offsetY,
     )
     if (!move) return false
-    this.pushDocument({
-      width: current.width,
-      height: current.height,
-      operations: [...current.operations, move.mask, move.patch],
-    })
+    this.pushActiveOperations([...this.activeOperations(), move.mask, move.patch])
     return true
   }
 
   commit(operation: PaintOperation): void {
-    const current = this.current
-    this.pushDocument({
-      width: current.width,
-      height: current.height,
-      operations: [...current.operations, operation],
-    })
+    this.pushActiveOperations([...this.activeOperations(), operation])
   }
 
   /** Commits a batch of operations as ONE undoable step (e.g. a sketch). */
   commitOperations(operations: readonly PaintOperation[]): void {
     if (operations.length === 0) return
-    const current = this.current
-    this.pushDocument({
-      width: current.width,
-      height: current.height,
-      operations: [...current.operations, ...operations],
-    })
+    this.pushActiveOperations([...this.activeOperations(), ...operations])
   }
 
   undo(): boolean {
@@ -442,21 +474,134 @@ export class PaintEngine {
     if (this.history.jumpTo(index)) this.emit()
   }
 
+  /** Clears the active layer (the whole canvas when it is the only layer). */
   clear(): void {
-    const current = this.current
-    if (current.operations.length === 0) return
-    this.pushDocument({ width: current.width, height: current.height, operations: [] })
+    if (this.activeOperations().length === 0) return
+    this.pushActiveOperations([])
   }
 
-  /** Replaces the document and resets history, e.g. when restoring a project. */
+  /** Replaces the document with a single layer (legacy/simple load). */
   loadDocument(width: number, height: number, operations: readonly PaintOperation[]): void {
+    const layer = createLayer('Layer 1')
+    layer.operations = [...operations]
+    this.loadLayers(width, height, [layer], layer.id)
+  }
+
+  /** Replaces the document (all layers) and resets history. */
+  loadLayers(
+    width: number,
+    height: number,
+    layers: readonly Layer[],
+    activeLayerId?: string,
+  ): void {
+    const safeLayers =
+      layers.length > 0
+        ? layers.map((layer) => ({ ...layer, operations: [...layer.operations] }))
+        : [createLayer('Layer 1')]
+    const active =
+      activeLayerId && layerById(safeLayers, activeLayerId)
+        ? activeLayerId
+        : safeLayers[safeLayers.length - 1].id
     this.initial = {
       width: positiveInt(width, DOCUMENT_WIDTH),
       height: positiveInt(height, DOCUMENT_HEIGHT),
-      operations: [...operations],
+      layers: safeLayers,
+      activeLayerId: active,
     }
     this.history.clear()
     this.emit()
+  }
+
+  /** Adds a new empty layer above the active one and selects it. */
+  addLayer(): void {
+    const current = this.current
+    const layer = createLayer(`Layer ${current.layers.length + 1}`)
+    this.pushDocument({
+      ...current,
+      layers: [...current.layers, layer],
+      activeLayerId: layer.id,
+    })
+  }
+
+  selectLayer(id: string): void {
+    const current = this.current
+    if (!layerById(current.layers, id) || current.activeLayerId === id) return
+    this.pushDocument({ ...current, activeLayerId: id })
+  }
+
+  setLayerVisible(id: string, visible: boolean): void {
+    const current = this.current
+    if (!layerById(current.layers, id)) return
+    this.pushDocument({
+      ...current,
+      layers: current.layers.map((layer) => (layer.id === id ? { ...layer, visible } : layer)),
+    })
+  }
+
+  setLayerOpacity(id: string, opacity: number): void {
+    const current = this.current
+    if (!layerById(current.layers, id)) return
+    const value = clampLayerOpacity(opacity)
+    this.pushDocument({
+      ...current,
+      layers: current.layers.map((layer) =>
+        layer.id === id ? { ...layer, opacity: value } : layer,
+      ),
+    })
+  }
+
+  renameLayer(id: string, name: string): void {
+    const current = this.current
+    const trimmed = name.trim()
+    if (!trimmed || !layerById(current.layers, id)) return
+    this.pushDocument({
+      ...current,
+      layers: current.layers.map((layer) =>
+        layer.id === id ? { ...layer, name: trimmed.slice(0, 60) } : layer,
+      ),
+    })
+  }
+
+  /** Moves a layer up (+1) or down (-1) in the stack. */
+  moveLayer(id: string, direction: -1 | 1): void {
+    const current = this.current
+    const index = current.layers.findIndex((layer) => layer.id === id)
+    const target = index + direction
+    if (index < 0 || target < 0 || target >= current.layers.length) return
+    const layers = [...current.layers]
+    const [layer] = layers.splice(index, 1)
+    layers.splice(target, 0, layer)
+    this.pushDocument({ ...current, layers })
+  }
+
+  /** Deletes a layer (keeps at least one). */
+  deleteLayer(id: string): void {
+    const current = this.current
+    if (current.layers.length <= 1) return
+    const index = current.layers.findIndex((layer) => layer.id === id)
+    if (index < 0) return
+    const layers = current.layers.filter((layer) => layer.id !== id)
+    const activeLayerId =
+      current.activeLayerId === id
+        ? layers[Math.min(index, layers.length - 1)].id
+        : current.activeLayerId
+    this.pushDocument({ ...current, layers, activeLayerId })
+  }
+
+  /** Merges a layer into the one below it (vector ops are concatenated). */
+  mergeDown(id: string): void {
+    const current = this.current
+    const index = current.layers.findIndex((layer) => layer.id === id)
+    if (index <= 0) return
+    const upper = current.layers[index]
+    const lower = current.layers[index - 1]
+    const merged: Layer = {
+      ...lower,
+      operations: [...lower.operations, ...upper.operations],
+    }
+    const layers = current.layers.filter((layer) => layer.id !== id)
+    layers[index - 1] = merged
+    this.pushDocument({ ...current, layers, activeLayerId: merged.id })
   }
 
   /** Rotates the document clockwise by whole quarter-turns. */
@@ -469,7 +614,10 @@ export class PaintEngine {
     this.pushDocument({
       width: size.width,
       height: size.height,
-      operations: rotateOperations(current.operations, turns, current.width, current.height),
+      layers: mapLayerOperations(current.layers, (ops) =>
+        rotateOperations(ops, turns, current.width, current.height),
+      ),
+      activeLayerId: current.activeLayerId,
     })
   }
 
@@ -487,7 +635,8 @@ export class PaintEngine {
     this.pushDocument({
       width: nextWidth,
       height: nextHeight,
-      operations: scaleOperations(current.operations, scaleX, scaleY),
+      layers: mapLayerOperations(current.layers, (ops) => scaleOperations(ops, scaleX, scaleY)),
+      activeLayerId: current.activeLayerId,
     })
   }
 
@@ -500,7 +649,10 @@ export class PaintEngine {
     this.pushDocument({
       width: Math.max(1, Math.round(bounded.width)),
       height: Math.max(1, Math.round(bounded.height)),
-      operations: translateOperations(current.operations, -bounded.x, -bounded.y),
+      layers: mapLayerOperations(current.layers, (ops) =>
+        translateOperations(ops, -bounded.x, -bounded.y),
+      ),
+      activeLayerId: current.activeLayerId,
     })
   }
 
@@ -552,7 +704,15 @@ export class PaintEngine {
       sketchDetail: this.sketchDetail,
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
-      operationCount: current.operations.length,
+      operationCount: totalOperations(current.layers),
+      layers: current.layers.map((layer) => ({
+        id: layer.id,
+        name: layer.name,
+        visible: layer.visible,
+        opacity: layer.opacity,
+        operationCount: layer.operations.length,
+      })),
+      activeLayerId: current.activeLayerId,
       revision: this.revision,
       documentWidth: current.width,
       documentHeight: current.height,

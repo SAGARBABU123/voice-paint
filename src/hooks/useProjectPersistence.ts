@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { createSnapshot, isProjectSnapshot } from '../project/serialize'
+import { createSnapshot, normalizeSnapshot, snapshotLayers } from '../project/serialize'
 import { createDefaultProjectStore } from '../project/index'
 import type { ProjectStore } from '../project/types'
 import { usePaintEngine, usePaintSnapshot } from './PaintProvider'
@@ -40,14 +40,15 @@ export function useProjectPersistence(
 
     const restore = async () => {
       try {
-        const snapshot = await store.load()
+        const snapshot = normalizeSnapshot(await store.load())
         if (cancelled) return
-        const canRestore =
-          snapshot !== null &&
-          isProjectSnapshot(snapshot) &&
-          engine.getSnapshot().operationCount === 0
-        if (canRestore) {
-          engine.loadDocument(snapshot.width, snapshot.height, snapshot.operations)
+        if (snapshot !== null && engine.getSnapshot().operationCount === 0) {
+          engine.loadLayers(
+            snapshot.width,
+            snapshot.height,
+            snapshotLayers(snapshot),
+            snapshot.activeLayerId,
+          )
         }
         lastSavedRevisionRef.current = engine.getSnapshot().revision
         readyRef.current = true

@@ -74,6 +74,58 @@ describe('PaintEngine', () => {
     expect(engine.getSnapshot().brushSize).toBe(8)
   })
 
+  it('starts with one layer and adds/selects layers', () => {
+    const engine = new PaintEngine()
+    expect(engine.getLayers()).toHaveLength(1)
+    engine.addLayer()
+    expect(engine.getLayers()).toHaveLength(2)
+    expect(engine.getSnapshot().activeLayerId).toBe(engine.getLayers()[1].id)
+  })
+
+  it('draws into the active layer and reports the total operation count', () => {
+    const engine = new PaintEngine()
+    engine.commit(stroke('a'))
+    engine.addLayer()
+    engine.commit(stroke('b'))
+
+    const [first, second] = engine.getLayers()
+    expect(first.operations.map((operation) => operation.id)).toEqual(['a'])
+    expect(second.operations.map((operation) => operation.id)).toEqual(['b'])
+    expect(engine.getSnapshot().operationCount).toBe(2)
+  })
+
+  it('toggles visibility/opacity and merges layers down', () => {
+    const engine = new PaintEngine()
+    engine.commit(stroke('a'))
+    engine.addLayer()
+    engine.commit(stroke('b'))
+    const second = engine.getLayers()[1]
+
+    engine.setLayerVisible(second.id, false)
+    expect(engine.getLayers()[1].visible).toBe(false)
+    engine.setLayerOpacity(second.id, 0.5)
+    expect(engine.getLayers()[1].opacity).toBeCloseTo(0.5)
+
+    engine.mergeDown(second.id)
+    expect(engine.getLayers()).toHaveLength(1)
+    expect(engine.getLayers()[0].operations.map((operation) => operation.id)).toEqual(['a', 'b'])
+  })
+
+  it('moves layers and never deletes the last one', () => {
+    const engine = new PaintEngine()
+    engine.commit(stroke('a'))
+    engine.addLayer()
+    engine.commit(stroke('b'))
+
+    engine.moveLayer(engine.getLayers()[0].id, 1)
+    expect(engine.getLayers()[0].operations[0].id).toBe('b')
+
+    engine.deleteLayer(engine.getLayers()[0].id)
+    expect(engine.getLayers()).toHaveLength(1)
+    engine.deleteLayer(engine.getLayers()[0].id)
+    expect(engine.getLayers()).toHaveLength(1)
+  })
+
   it('stores font family, weight and style', () => {
     const engine = new PaintEngine()
     engine.setFontFamily('serif')

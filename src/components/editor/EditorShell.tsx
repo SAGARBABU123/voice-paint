@@ -4,6 +4,7 @@ import { useProjectPersistence } from '../../hooks/useProjectPersistence'
 import { useRecordRecentColor } from '../../hooks/useRecentColors'
 import { CanvasStage } from '../canvas/CanvasStage'
 import { HistoryPanel } from './HistoryPanel'
+import { LayersPanel } from './LayersPanel'
 import { OptionsBar } from '../toolbar/OptionsBar'
 import { Toolbar } from '../toolbar/Toolbar'
 import { ToolbarRail } from '../toolbar/ToolbarRail'
@@ -15,6 +16,7 @@ import { cn } from '../ui/cn'
 
 const DOCK_TABS = [
   { id: 'voice', label: 'Voice' },
+  { id: 'layers', label: 'Layers' },
   { id: 'history', label: 'History' },
 ] as const
 
@@ -106,7 +108,13 @@ export function EditorShell() {
             aria-labelledby={`dock-tab-${dockTab}`}
             className="min-h-0 flex-1 overflow-y-auto"
           >
-            {dockTab === 'voice' ? <VoicePanel /> : <HistoryPanel />}
+            {dockTab === 'voice' ? (
+              <VoicePanel />
+            ) : dockTab === 'layers' ? (
+              <LayersPanel />
+            ) : (
+              <HistoryPanel />
+            )}
           </div>
         </aside>
       </main>

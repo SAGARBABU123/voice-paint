@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { MemoryProjectStore } from './memoryProjectStore'
 import type { ProjectSnapshot } from './types'
 
-const snapshot: ProjectSnapshot = { version: 1, width: 960, height: 720, operations: [] }
+const snapshot: ProjectSnapshot = { version: 2, width: 960, height: 720, layers: [] }
 
 describe('MemoryProjectStore', () => {
   it('starts empty', async () => {

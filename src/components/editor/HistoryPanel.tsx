@@ -1,13 +1,14 @@
 import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
 import type { DocumentState } from '../../paint/engine'
+import { activeLayer, totalOperations } from '../../paint/layers'
 import { TOOL_LABELS } from '../toolLabels'
 import { cn } from '../ui/cn'
 
 /** A short, human label for the step that produced this document state. */
 function describe(entry: DocumentState, previous: DocumentState | undefined): string {
-  const last = entry.operations[entry.operations.length - 1]
+  const last = activeLayer(entry.layers, entry.activeLayerId).operations.at(-1)
   if (!last) return 'Empty canvas'
-  if (previous && entry.operations.length <= previous.operations.length) return 'Change'
+  if (previous && totalOperations(entry.layers) <= totalOperations(previous.layers)) return 'Change'
   if (last.kind === 'stroke' || last.kind === 'shape') return TOOL_LABELS[last.tool]
   if (last.kind === 'text') return 'Text'
   return 'Image'

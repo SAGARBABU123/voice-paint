@@ -103,26 +103,48 @@ export function renderOperation(
   ctx.restore()
 }
 
+/** A layer as the renderer sees it: operations plus visibility/opacity. */
+export type RenderLayer = {
+  operations: readonly PaintOperation[]
+  visible?: boolean
+  opacity?: number
+}
+
 export type RenderSceneOptions = {
   width: number
   height: number
-  operations: readonly PaintOperation[]
+  layers: readonly RenderLayer[]
+  /** Layer index the live preview belongs to (drawn after its operations). */
+  previewLayerIndex?: number
   preview?: PaintOperation | readonly PreviewItem[] | null
   background?: string
   resolveImage?: ImageResolver
 }
 
+function drawPreview(
+  ctx: CanvasRenderingContext2D,
+  preview: PaintOperation | readonly PreviewItem[],
+  resolveImage?: ImageResolver,
+): void {
+  const items: readonly PreviewItem[] = Array.isArray(preview)
+    ? preview
+    : [{ operation: preview as PaintOperation }]
+  for (const item of items) {
+    renderOperation(ctx, item.operation, resolveImage, item.alpha)
+  }
+}
+
 /**
- * Repaints the whole document: opaque background, committed operations, then
- * the optional live preview. Preview can be a single in-progress operation
- * (stroke/shape) or a list of animated reveals with per-item opacity.
+ * Repaints the whole document: opaque background, then every visible layer
+ * bottom-to-top with its opacity, then the live preview on the active layer.
  */
 export function renderScene(ctx: CanvasRenderingContext2D, options: RenderSceneOptions): void {
   const {
     width,
     height,
-    operations,
+    layers,
     preview = null,
+    previewLayerIndex,
     background = BACKGROUND_COLOR,
     resolveImage,
   } = options
@@ -132,18 +154,37 @@ export function renderScene(ctx: CanvasRenderingContext2D, options: RenderSceneO
   ctx.fillStyle = background
   ctx.fillRect(0, 0, width, height)
 
-  for (const operation of operations) {
-    renderOperation(ctx, operation, resolveImage)
-  }
+  // The live preview belongs to the active layer (default: the top layer).
+  const previewIndex = previewLayerIndex ?? layers.length - 1
 
-  const previewItems: readonly PreviewItem[] = Array.isArray(preview)
-    ? preview
-    : preview
-      ? [{ operation: preview }]
-      : []
-  for (const item of previewItems) {
-    renderOperation(ctx, item.operation, resolveImage, item.alpha)
-  }
+  layers.forEach((layer, index) => {
+    if (layer.visible === false) return
+    const draw = (target: CanvasRenderingContext2D) => {
+      for (const operation of layer.operations) renderOperation(target, operation, resolveImage)
+      if (preview !== null && index === previewIndex) drawPreview(target, preview, resolveImage)
+    }
+
+    const opacity = layer.opacity ?? 1
+    if (opacity >= 1) {
+      draw(ctx)
+      return
+    }
+    // Composite a semi-transparent layer through an offscreen buffer so its
+    // own operations don't each fade into one another.
+    const offscreen = document.createElement('canvas')
+    offscreen.width = width
+    offscreen.height = height
+    const offscreenCtx = offscreen.getContext('2d')
+    if (!offscreenCtx) {
+      draw(ctx)
+      return
+    }
+    draw(offscreenCtx)
+    ctx.save()
+    ctx.globalAlpha = Math.max(0, Math.min(1, opacity))
+    ctx.drawImage(offscreen, 0, 0)
+    ctx.restore()
+  })
 
   ctx.restore()
 }

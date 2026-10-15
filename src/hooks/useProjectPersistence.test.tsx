@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { PaintEngine } from '../paint/engine'
 import type { StrokeOperation } from '../paint/types'
 import { MemoryProjectStore } from '../project/memoryProjectStore'
+import type { ProjectSnapshot } from '../project/types'
 import type { ProjectStore } from '../project/types'
 import { PaintEngineProvider } from './PaintProvider'
 import { useProjectPersistence } from './useProjectPersistence'
@@ -44,7 +45,12 @@ async function flush() {
 describe('useProjectPersistence', () => {
   it('restores saved operations on mount', async () => {
     const store = new MemoryProjectStore()
-    await store.save({ version: 1, width: 960, height: 720, operations: [stroke('saved')] })
+    await store.save({
+      version: 1,
+      width: 960,
+      height: 720,
+      operations: [stroke('saved')],
+    } as unknown as ProjectSnapshot)
 
     const { engine } = setup(store)
     await flush()
@@ -55,7 +61,12 @@ describe('useProjectPersistence', () => {
 
   it('restores the saved document dimensions', async () => {
     const store = new MemoryProjectStore()
-    await store.save({ version: 1, width: 480, height: 360, operations: [stroke('saved')] })
+    await store.save({
+      version: 1,
+      width: 480,
+      height: 360,
+      operations: [stroke('saved')],
+    } as unknown as ProjectSnapshot)
 
     const { engine } = setup(store)
     await flush()
@@ -76,14 +87,19 @@ describe('useProjectPersistence', () => {
 
     await waitFor(async () => {
       const saved = await store.load()
-      expect(saved?.operations.map((operation) => operation.id)).toEqual(['new'])
+      expect(saved?.layers[0]?.operations.map((operation) => operation.id)).toEqual(['new'])
     })
     await waitFor(() => expect(view.result.current.status).toBe('saved'))
   })
 
   it('does not overwrite a drawing started before restore finishes', async () => {
     const store = new MemoryProjectStore()
-    await store.save({ version: 1, width: 960, height: 720, operations: [stroke('saved')] })
+    await store.save({
+      version: 1,
+      width: 960,
+      height: 720,
+      operations: [stroke('saved')],
+    } as unknown as ProjectSnapshot)
 
     const engine = new PaintEngine()
     engine.loadDocument(960, 720, [stroke('local')])
