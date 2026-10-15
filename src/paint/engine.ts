@@ -58,6 +58,7 @@ export type PaintSnapshot = {
   brushSize: number
   fontSize: number
   fillTolerance: number
+  shapeFill: boolean
   strokeStyle: StrokeStyle
   sketchStyle: SketchStyle
   sketchWeight: SketchWeight
@@ -103,6 +104,7 @@ export class PaintEngine {
   private sketchWeight: SketchWeight = 'normal'
   private sketchDetail: SketchDetail = 'normal'
   private fillTolerance = 0
+  private shapeFill = false
   private readonly history = new History<DocumentState>()
   private readonly listeners = new Set<() => void>()
   private canvas: HTMLCanvasElement | null = null
@@ -201,6 +203,13 @@ export class PaintEngine {
     this.emit()
   }
 
+  /** Whether new shapes are filled (true) or outlined (false). */
+  setShapeFill(fill: boolean): void {
+    if (fill === this.shapeFill) return
+    this.shapeFill = fill
+    this.emit()
+  }
+
   /** Flood-fill colour tolerance (0–255); higher fills across similar colours. */
   setFillTolerance(value: number): void {
     const next = Math.max(0, Math.min(255, Math.round(value)))
@@ -286,6 +295,7 @@ export class PaintEngine {
         size: this.brushSize,
         start,
         end,
+        fill: this.shapeFill,
       })
     }
   }
@@ -458,6 +468,7 @@ export class PaintEngine {
       brushSize: this.brushSize,
       fontSize: this.fontSize,
       fillTolerance: this.fillTolerance,
+      shapeFill: this.shapeFill,
       strokeStyle: this.strokeStyle,
       sketchStyle: this.sketchStyle,
       sketchWeight: this.sketchWeight,

@@ -71,7 +71,8 @@ export function renderOperation(
     }
   } else if (operation.kind === 'shape') {
     ctx.strokeStyle = operation.color
-    strokeShape(ctx, operation.tool, operation.start, operation.end)
+    ctx.fillStyle = operation.color
+    strokeShape(ctx, operation.tool, operation.start, operation.end, operation.fill === true)
   }
 
   ctx.restore()

@@ -137,6 +137,17 @@ describe('renderOperation — strokes and shapes', () => {
     expect(ctx.calls.find((call) => call.method === 'strokeRect')?.args).toEqual([0, 0, 20, 40])
   })
 
+  it('fills a shape when the fill flag is set', () => {
+    const filled = createFakeContext()
+    renderOperation(filled, { ...shape('ellipse'), fill: true })
+    expect(methods(filled)).toContain('fill')
+
+    const outlined = createFakeContext()
+    renderOperation(outlined, { ...shape('ellipse'), fill: false })
+    expect(methods(outlined)).toContain('stroke')
+    expect(methods(outlined)).not.toContain('fill')
+  })
+
   it('draws an ellipse from the centre and radii', () => {
     const ctx = createFakeContext()
     renderOperation(ctx, shape('ellipse'))

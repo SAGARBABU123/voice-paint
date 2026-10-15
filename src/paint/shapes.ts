@@ -139,12 +139,20 @@ export function strokeShape(
   tool: ShapeTool,
   start: Point,
   end: Point,
+  fill = false,
 ): void {
+  // Paint the current path: filled when the shape is filled (closed shapes
+  // only), otherwise stroked. Open paths (line/curve) stay stroked.
+  const finish = (fillable = true) => {
+    if (fill && fillable) ctx.fill()
+    else ctx.stroke()
+  }
+
   if (tool === 'line') {
     ctx.beginPath()
     ctx.moveTo(start.x, start.y)
     ctx.lineTo(end.x, end.y)
-    ctx.stroke()
+    finish(false)
     return
   }
 
@@ -153,7 +161,13 @@ export function strokeShape(
   if (w < 1 || h < 1) return
 
   if (tool === 'rectangle') {
-    ctx.strokeRect(x, y, w, h)
+    if (fill) {
+      ctx.beginPath()
+      ctx.rect(x, y, w, h)
+      ctx.fill()
+    } else {
+      ctx.strokeRect(x, y, w, h)
+    }
     return
   }
 
@@ -161,7 +175,7 @@ export function strokeShape(
     const center = centerOf(start, end)
     ctx.beginPath()
     ctx.ellipse(center.x, center.y, w / 2, h / 2, 0, 0, Math.PI * 2)
-    ctx.stroke()
+    finish()
     return
   }
 
@@ -172,13 +186,13 @@ export function strokeShape(
     ctx.beginPath()
     ctx.moveTo(start.x, start.y)
     ctx.quadraticCurveTo(mid.x - dy * 0.4, mid.y + dx * 0.4, end.x, end.y)
-    ctx.stroke()
+    finish(false)
     return
   }
 
   if (tool === 'rounded-rectangle') {
     roundedRectPath(ctx, x, y, w, h, Math.min(w, h) * 0.18)
-    ctx.stroke()
+    finish()
     return
   }
 
@@ -195,7 +209,7 @@ export function strokeShape(
       }
     })
     tracePoints(ctx, points)
-    ctx.stroke()
+    finish()
     return
   }
 
@@ -209,7 +223,7 @@ export function strokeShape(
       hexagon: { sides: 6, startAngle: 0 },
     }
     tracePoints(ctx, polygonPoints(center, outer, config[tool].sides, config[tool].startAngle))
-    ctx.stroke()
+    finish()
     return
   }
 
@@ -219,7 +233,7 @@ export function strokeShape(
       { x: x + w, y: y + h },
       { x, y },
     ])
-    ctx.stroke()
+    finish()
     return
   }
 
@@ -229,7 +243,7 @@ export function strokeShape(
     const inner: Record<string, number> = { 'star-4': 0.35, 'star-5': 0.42, 'star-6': 0.5 }
     const points = tool === 'star-4' ? 4 : tool === 'star-5' ? 5 : 6
     tracePoints(ctx, starPoints(center, outer, inner[tool], points))
-    ctx.stroke()
+    finish()
     return
   }
 
@@ -284,7 +298,7 @@ export function strokeShape(
                 { x: cxMid + w * 0.28, y: y + h },
               ]
     tracePoints(ctx, points)
-    ctx.stroke()
+    finish()
     return
   }
 
@@ -294,7 +308,7 @@ export function strokeShape(
     ctx.lineTo(x + w * 0.16, y + h - h * 0.2)
     ctx.lineTo(x + w * 0.04, y + h - h * 0.06)
     ctx.closePath()
-    ctx.stroke()
+    finish()
     return
   }
 
@@ -306,7 +320,7 @@ export function strokeShape(
     ctx.lineTo(x + w * 0.22, y + h)
     ctx.lineTo(x + w * 0.5, y + h * 0.86)
     ctx.closePath()
-    ctx.stroke()
+    finish()
     return
   }
 
@@ -348,7 +362,7 @@ export function strokeShape(
     ctx.lineTo(x + w * 0.5, y + h * 0.9)
     ctx.lineTo(x + w * 0.4, y + h * 0.64)
     ctx.closePath()
-    ctx.stroke()
+    finish()
     return
   }
 
@@ -397,7 +411,7 @@ export function strokeShape(
     )
     ctx.bezierCurveTo(x + w * 0.92, y + h * 0.72, x + w * 0.58, y + h * 0.9, x + w * 0.5, y + h)
     ctx.closePath()
-    ctx.stroke()
+    finish()
     return
   }
 
@@ -408,7 +422,7 @@ export function strokeShape(
       pts.push(unit(raw[index], raw[index + 1], rect))
     }
     tracePoints(ctx, pts)
-    ctx.stroke()
+    finish()
     return
   }
 

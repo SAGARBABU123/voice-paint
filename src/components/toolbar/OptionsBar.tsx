@@ -68,6 +68,12 @@ export function OptionsBar() {
   const sizeLabel = isTextTool ? 'Font size' : 'Brush size'
   const fillPercent = ((currentSize - minSize) / (maxSize - minSize)) * 100
   const showStroke = STROKE_TOOLS.has(state.activeTool)
+  const showFill =
+    showStroke &&
+    state.activeTool !== 'line' &&
+    state.activeTool !== 'curve' &&
+    state.activeTool !== 'pencil' &&
+    state.activeTool !== 'eraser'
 
   return (
     <div className="flex h-11 shrink-0 items-center gap-3 overflow-x-auto border-b border-surface-200 bg-surface-0 px-3">
@@ -134,6 +140,47 @@ export function OptionsBar() {
           >
             {state.fillTolerance}
           </span>
+        </div>
+      ) : null}
+
+      {showFill ? (
+        <div
+          className="flex shrink-0 items-center gap-2 border-l border-surface-200 pl-3"
+          role="group"
+          aria-label="Shape fill"
+        >
+          <span className="text-11 font-semibold uppercase tracking-[0.08em] text-surface-400">
+            Fill
+          </span>
+          <div className="flex items-center gap-0.5">
+            {([false, true] as const).map((value) => {
+              const active = state.shapeFill === value
+              return (
+                <button
+                  key={String(value)}
+                  type="button"
+                  aria-pressed={active}
+                  aria-label={value ? 'Filled shape' : 'Outlined shape'}
+                  title={value ? 'Draw filled shapes' : 'Draw shape outlines'}
+                  onClick={() => engine.setShapeFill(value)}
+                  className={cn(
+                    'inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-12 font-medium transition-colors duration-150',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                    active
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-surface-500 hover:bg-surface-100 hover:text-surface-800',
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="inline-block size-3.5 rounded-[3px] border border-current"
+                    style={{ backgroundColor: value ? state.color : 'transparent' }}
+                  />
+                  {value ? 'Fill' : 'Outline'}
+                </button>
+              )
+            })}
+          </div>
         </div>
       ) : null}
 

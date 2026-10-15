@@ -620,6 +620,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
           color,
           size: brushSize,
           style: strokeStyle,
+          fill: state.shapeFill,
           start: point,
           end: point,
         }

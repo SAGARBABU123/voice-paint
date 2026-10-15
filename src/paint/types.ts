@@ -63,6 +63,8 @@ export type ShapeOperation = {
   end: Point
   /** Absent means solid (keeps older saved documents compatible). */
   style?: StrokeStyle
+  /** Absent/true renders a filled shape; false renders the outline. */
+  fill?: boolean
 }
 
 /** A raster imported from a file, positioned and scaled in document space. */
