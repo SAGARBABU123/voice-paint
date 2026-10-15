@@ -208,6 +208,16 @@ describe('renderOperation — text', () => {
     expect(ctx.fillStyle).toBe('#ff00ff')
   })
 
+  it('builds the font string from weight and style', () => {
+    const bold = createFakeContext()
+    renderOperation(bold, { ...TEXT_OPERATION, fontWeight: 700 })
+    expect(bold.font).toBe('700 24px sans-serif')
+
+    const italic = createFakeContext()
+    renderOperation(italic, { ...TEXT_OPERATION, fontStyle: 'italic', fontFamily: 'serif' })
+    expect(italic.font).toBe('italic 24px serif')
+  })
+
   it('rotates text by whole quarter-turns', () => {
     const ctx = createFakeContext()
     renderOperation(ctx, { ...TEXT_OPERATION, rotation: 1 })

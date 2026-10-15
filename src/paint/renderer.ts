@@ -37,7 +37,11 @@ export function renderOperation(
       ctx.rotate((operation.rotation * Math.PI) / 2)
     }
     ctx.fillStyle = operation.color
-    ctx.font = `${operation.fontSize}px ${operation.fontFamily}`
+    const style = operation.fontStyle ?? 'normal'
+    const weight = operation.fontWeight ?? 400
+    // Keep the default string minimal ("24px sans-serif") for older documents.
+    const prefix = `${style !== 'normal' ? `${style} ` : ''}${weight !== 400 ? `${weight} ` : ''}`
+    ctx.font = `${prefix}${operation.fontSize}px ${operation.fontFamily}`
     ctx.textBaseline = 'top'
     ctx.fillText(operation.text, 0, 0)
     ctx.restore()

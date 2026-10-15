@@ -98,6 +98,10 @@ export type TextOperation = {
   color: string
   fontSize: number
   fontFamily: string
+  /** 400 (regular) or 700 (bold); absent = 400. */
+  fontWeight?: number
+  /** Absent = normal. */
+  fontStyle?: 'normal' | 'italic'
   rotation: number
 }
 

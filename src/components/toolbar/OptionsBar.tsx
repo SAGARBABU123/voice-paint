@@ -114,6 +114,62 @@ export function OptionsBar() {
         </span>
       </div>
 
+      {isTextTool ? (
+        <div className="flex shrink-0 items-center gap-2 border-l border-surface-200 pl-3">
+          <label
+            htmlFor="vop-options-font"
+            className="text-11 font-semibold uppercase tracking-[0.08em] text-surface-400"
+          >
+            Typeface
+          </label>
+          <select
+            id="vop-options-font"
+            value={state.fontFamily}
+            title="Font family"
+            onChange={(event) => engine.setFontFamily(event.target.value)}
+            className="h-7 rounded-md border border-surface-200 bg-surface-0 px-2 text-13 text-surface-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          >
+            <option value="sans-serif">Sans</option>
+            <option value="serif">Serif</option>
+            <option value="monospace">Mono</option>
+          </select>
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              aria-pressed={state.fontBold}
+              aria-label="Bold"
+              title="Bold"
+              onClick={() => engine.setFontBold(!state.fontBold)}
+              className={cn(
+                'inline-flex size-7 items-center justify-center rounded-md text-13 font-bold transition-colors duration-150',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                state.fontBold
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-surface-500 hover:bg-surface-100 hover:text-surface-800',
+              )}
+            >
+              B
+            </button>
+            <button
+              type="button"
+              aria-pressed={state.fontItalic}
+              aria-label="Italic"
+              title="Italic"
+              onClick={() => engine.setFontItalic(!state.fontItalic)}
+              className={cn(
+                'inline-flex size-7 items-center justify-center rounded-md text-13 italic transition-colors duration-150',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                state.fontItalic
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-surface-500 hover:bg-surface-100 hover:text-surface-800',
+              )}
+            >
+              I
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {state.activeTool === 'fill' ? (
         <div className="flex shrink-0 items-center gap-2 border-l border-surface-200 pl-3">
           <label

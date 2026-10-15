@@ -74,6 +74,19 @@ describe('PaintEngine', () => {
     expect(engine.getSnapshot().brushSize).toBe(8)
   })
 
+  it('stores font family, weight and style', () => {
+    const engine = new PaintEngine()
+    engine.setFontFamily('serif')
+    expect(engine.getSnapshot().fontFamily).toBe('serif')
+    engine.setFontFamily('comic-sans')
+    expect(engine.getSnapshot().fontFamily).toBe('serif')
+
+    engine.setFontBold(true)
+    engine.setFontItalic(true)
+    expect(engine.getSnapshot().fontBold).toBe(true)
+    expect(engine.getSnapshot().fontItalic).toBe(true)
+  })
+
   it('clamps brush opacity/smoothing and toggles pressure', () => {
     const engine = new PaintEngine()
     engine.setBrushOpacity(2)

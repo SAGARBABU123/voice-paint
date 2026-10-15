@@ -16,7 +16,7 @@ import { clamp, clampRectToBounds, type Rect } from './geometry'
 import { History } from './history'
 import { createId } from './id'
 import { placeShapes, type ShapePlacement } from './placement'
-import { createTextOperation } from './text'
+import { DEFAULT_FONT_FAMILY, createTextOperation, isFontFamily, type FontFamily } from './text'
 import { createSelectionMask, createSelectionMove } from './selection'
 import {
   isSketchDetail,
@@ -62,6 +62,9 @@ export type PaintSnapshot = {
   brushOpacity: number
   brushPressure: boolean
   brushSmoothing: number
+  fontFamily: string
+  fontBold: boolean
+  fontItalic: boolean
   strokeStyle: StrokeStyle
   sketchStyle: SketchStyle
   sketchWeight: SketchWeight
@@ -111,6 +114,9 @@ export class PaintEngine {
   private brushOpacity = 1
   private brushPressure = true
   private brushSmoothing = 0
+  private fontFamily: FontFamily = DEFAULT_FONT_FAMILY
+  private fontBold = false
+  private fontItalic = false
   private readonly history = new History<DocumentState>()
   private readonly listeners = new Set<() => void>()
   private canvas: HTMLCanvasElement | null = null
@@ -205,6 +211,24 @@ export class PaintEngine {
     this.emit()
   }
 
+  setFontFamily(family: string): void {
+    if (!isFontFamily(family) || family === this.fontFamily) return
+    this.fontFamily = family
+    this.emit()
+  }
+
+  setFontBold(bold: boolean): void {
+    if (bold === this.fontBold) return
+    this.fontBold = bold
+    this.emit()
+  }
+
+  setFontItalic(italic: boolean): void {
+    if (italic === this.fontItalic) return
+    this.fontItalic = italic
+    this.emit()
+  }
+
   setStrokeStyle(style: StrokeStyle): void {
     if (!isStrokeStyle(style) || style === this.strokeStyle) return
     this.strokeStyle = style
@@ -258,6 +282,9 @@ export class PaintEngine {
         y: point.y,
         color: this.color,
         fontSize: this.fontSize,
+        fontFamily: this.fontFamily,
+        fontWeight: this.fontBold ? 700 : 400,
+        fontStyle: this.fontItalic ? 'italic' : 'normal',
       }),
     )
     return true
@@ -516,6 +543,9 @@ export class PaintEngine {
       brushOpacity: this.brushOpacity,
       brushPressure: this.brushPressure,
       brushSmoothing: this.brushSmoothing,
+      fontFamily: this.fontFamily,
+      fontBold: this.fontBold,
+      fontItalic: this.fontItalic,
       strokeStyle: this.strokeStyle,
       sketchStyle: this.sketchStyle,
       sketchWeight: this.sketchWeight,
