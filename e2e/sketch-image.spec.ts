@@ -56,12 +56,7 @@ function contrastPng(width: number, height: number): Buffer {
   ])
 }
 
-// KNOWN FAILURE (tracked): the photo→sketch conversion throws in the built
-// (production) app — the dev server works, so it is a prod-only issue around
-// the lazy OpenCV WASM chunk / conversion path. This test blocks the deploy
-// gate, so it is marked fixme until that is fixed. The pure geometry core is
-// still covered by the sketch/roughSketch unit tests.
-test.fixme('sketches an uploaded photo as hand-drawn strokes', async ({ page }) => {
+test('sketches an uploaded photo as hand-drawn strokes', async ({ page }) => {
   // The first conversion lazy-loads the ~15 MB OpenCV WASM chunk.
   test.setTimeout(180_000)
   await page.context().route('**/sw.js', (route) => route.abort())
@@ -76,6 +71,7 @@ test.fixme('sketches an uploaded photo as hand-drawn strokes', async ({ page }) 
   await expect(written).toBeVisible({ timeout: 150_000 })
   await expect(page.getByText(/wrote \d+ stroke/)).toBeVisible()
 
-  // The strokes committed as real, undoable history.
-  await expect(page.getByTitle('Undo (Ctrl/Cmd+Z)')).toBeEnabled()
+  // The strokes committed as real, undoable history (the rail is collapsed,
+  // where the undo control is the icon button labelled 'Undo').
+  await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled()
 })

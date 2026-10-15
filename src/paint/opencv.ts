@@ -1,37 +1,52 @@
 import type { CV } from '@techstark/opencv-js'
+// Load the engine as a plain asset script rather than a module import. The
+// package is a UMD bundle whose CommonJS entry exports the ready-Promise as the
+// default export; bundlers wrap that in a CJS interop namespace, which then
+// throws "Promise.prototype.then called on incompatible receiver" in the
+// production build. In a browser the UMD instead assigns `window.cv`, so we
+// load it via a script tag and await that (real, unwrapped) Promise.
+import opencvScriptUrl from '@techstark/opencv-js/dist/opencv.js?url'
 
 let engine: Promise<CV> | null = null
-
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as { then?: unknown }).then === 'function'
-  )
-}
 
 /** True once the WASM engine has started loading (used for first-use UX hints). */
 export function isCvReady(): boolean {
   return engine !== null
 }
 
+function globalCv(): unknown {
+  return (window as unknown as { cv?: unknown }).cv
+}
+
 /**
  * Lazy singleton for the OpenCV.js WASM engine (@techstark/opencv-js v5).
  *
- * The package's UMD build embeds the ~14 MB WASM as base64 inside its own
- * chunk, so the browser only fetches one chunk on first use — no separate
- * .wasm request, and no CORS issues on static hosts like Cloudflare Pages.
- * The chunk is dynamically imported so it never blocks the initial paint.
- *
- * IMPORTANT: the package's default export is a Promise that resolves to the
- * cv namespace. We await it once here; every caller shares the result.
+ * The bundle embeds the ~14 MB WASM as base64, so loading it needs only the one
+ * asset request (no separate .wasm fetch, no CORS concerns on static hosts).
+ * The asset is requested on first use only.
  */
 export function loadOpenCv(): Promise<CV> {
-  engine ??= import('@techstark/opencv-js').then(async (mod) => {
-    const candidate = (mod as { default?: unknown }).default
-    if (candidate === undefined) return mod as unknown as CV
-    if (isPromiseLike(candidate)) return (await candidate) as CV
-    return candidate as CV
+  engine ??= new Promise<CV>((resolve, reject) => {
+    const alreadyLoaded = globalCv()
+    if (alreadyLoaded !== undefined) {
+      // The UMD exposes a ready-Promise; resolve through it.
+      Promise.resolve(alreadyLoaded as CV).then(resolve, reject)
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = opencvScriptUrl
+    script.async = true
+    script.onload = () => {
+      const loaded = globalCv()
+      if (loaded === undefined) {
+        reject(new Error('The OpenCV engine did not initialise.'))
+        return
+      }
+      Promise.resolve(loaded as CV).then(resolve, reject)
+    }
+    script.onerror = () => reject(new Error('Could not load the OpenCV engine.'))
+    document.head.appendChild(script)
   })
   return engine
 }
