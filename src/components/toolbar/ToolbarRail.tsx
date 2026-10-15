@@ -530,6 +530,7 @@ export function ToolbarRail({ cropMode = false, onToggleCrop }: ToolbarRailProps
 
       <input
         ref={fileInputRef}
+        id="vop-open-file"
         type="file"
         accept="image/png,image/jpeg"
         aria-label="Choose image file"
@@ -539,6 +540,7 @@ export function ToolbarRail({ cropMode = false, onToggleCrop }: ToolbarRailProps
 
       <input
         ref={sketchFileInputRef}
+        id="vop-sketch-file"
         type="file"
         accept="image/png,image/jpeg"
         aria-label="Choose photo to sketch"

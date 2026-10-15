@@ -10,6 +10,7 @@ import { ToolbarRail } from '../toolbar/ToolbarRail'
 import { VoicePanel } from '../voice/VoicePanel'
 import { ShortcutsHelp } from './ShortcutsHelp'
 import { StatusBar } from './StatusBar'
+import { CommandPalette } from '../../commands/CommandPalette'
 import { cn } from '../ui/cn'
 
 const DOCK_TABS = [
@@ -23,6 +24,7 @@ export function EditorShell() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [cropMode, setCropMode] = useState(false)
   const [dockTab, setDockTab] = useState<DockTab>('voice')
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const toggleShortcuts = useCallback(() => setShortcutsOpen((open) => !open), [])
   const toggleCrop = useCallback(() => setCropMode((enabled) => !enabled), [])
   const exitCrop = useCallback(() => setCropMode(false), [])
@@ -40,6 +42,18 @@ export function EditorShell() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [shortcutsOpen, toggleShortcuts])
+
+  // ⌘K / Ctrl+K opens the command palette (actions live in one registry).
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setPaletteOpen((open) => !open)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   return (
     /* Studio shell: the chrome fills the viewport (no floating card), so the
@@ -119,6 +133,12 @@ export function EditorShell() {
       ) : null}
 
       <StatusBar persistence={persistence.status} />
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onToggleShortcuts={toggleShortcuts}
+      />
     </div>
   )
 }

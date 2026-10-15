@@ -4,6 +4,7 @@ import { BrandMark } from '../ui/BrandMark'
 import { Button } from '../ui/Button'
 import { Icon } from '../ui/Icon'
 import { ThemeSwitcher } from '../ui/ThemeSwitcher'
+import { MenuBar } from '../../commands/MenuBar'
 import { TOOL_ICONS, TOOL_LABELS, TOOLS_FREEFORM } from '../toolLabels'
 import { PenStyleMenu } from './PenStyleMenu'
 
@@ -36,7 +37,8 @@ export function Toolbar({ onToggleShortcuts, shortcutsOpen = false }: ToolbarPro
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-surface-200 bg-surface-0 px-3">
-      <div className="flex shrink-0 items-center gap-2 border-r border-surface-200 pr-3">
+      <MenuBar onToggleShortcuts={onToggleShortcuts} />
+      <div className="flex shrink-0 items-center gap-2 border-l border-surface-200 pl-3 pr-1">
         <BrandMark size={26} />
         <h1 className="hidden whitespace-nowrap font-display text-13 font-semibold tracking-[-0.01em] text-surface-900 sm:block">
           Voice Over Paint
