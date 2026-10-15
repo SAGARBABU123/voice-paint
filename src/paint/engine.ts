@@ -26,6 +26,7 @@ import {
   type Layer,
 } from './layers'
 import { placeShapes, type ShapePlacement } from './placement'
+import { isSymmetry, type Symmetry } from './symmetry'
 import { DEFAULT_FONT_FAMILY, createTextOperation, isFontFamily, type FontFamily } from './text'
 import { createSelectionMask, createSelectionMove } from './selection'
 import {
@@ -85,6 +86,7 @@ export type PaintSnapshot = {
   fontFamily: string
   fontBold: boolean
   fontItalic: boolean
+  symmetry: Symmetry
   strokeStyle: StrokeStyle
   sketchStyle: SketchStyle
   sketchWeight: SketchWeight
@@ -139,6 +141,7 @@ export class PaintEngine {
   private fontFamily: FontFamily = DEFAULT_FONT_FAMILY
   private fontBold = false
   private fontItalic = false
+  private symmetry: Symmetry = 'off'
   private readonly history = new History<DocumentState>()
   private readonly listeners = new Set<() => void>()
   private canvas: HTMLCanvasElement | null = null
@@ -270,6 +273,12 @@ export class PaintEngine {
   setFontBold(bold: boolean): void {
     if (bold === this.fontBold) return
     this.fontBold = bold
+    this.emit()
+  }
+
+  setSymmetry(mode: Symmetry): void {
+    if (!isSymmetry(mode) || mode === this.symmetry) return
+    this.symmetry = mode
     this.emit()
   }
 
@@ -698,6 +707,7 @@ export class PaintEngine {
       fontFamily: this.fontFamily,
       fontBold: this.fontBold,
       fontItalic: this.fontItalic,
+      symmetry: this.symmetry,
       strokeStyle: this.strokeStyle,
       sketchStyle: this.sketchStyle,
       sketchWeight: this.sketchWeight,

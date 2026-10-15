@@ -23,6 +23,7 @@ import { clientToDocumentPoint } from '../../paint/coordinates'
 import { copyRegion, getClipboardImage, setClipboardImage } from '../../paint/clipboard'
 import { containsPoint, distance, normalizeRect, type Rect } from '../../paint/geometry'
 import { createId } from '../../paint/id'
+import { mirrorOperation } from '../../paint/symmetry'
 import { getCachedImage, preloadImages } from '../../paint/imageCache'
 import { importImageFile } from '../../paint/importImage'
 import { renderScene, type PreviewItem } from '../../paint/renderer'
@@ -779,7 +780,14 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
 
     const draft = draftRef.current
     draftRef.current = null
-    if (draft) engine.commit(draft)
+    if (draft) {
+      const mirrors =
+        state.symmetry === 'off'
+          ? []
+          : mirrorOperation(draft, engine.width, engine.height, state.symmetry)
+      if (mirrors.length > 0) engine.commitOperations([draft, ...mirrors])
+      else engine.commit(draft)
+    }
     paint()
   }
 

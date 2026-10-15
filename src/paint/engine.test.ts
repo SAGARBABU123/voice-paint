@@ -126,6 +126,13 @@ describe('PaintEngine', () => {
     expect(engine.getLayers()).toHaveLength(1)
   })
 
+  it('stores the symmetry mode', () => {
+    const engine = new PaintEngine()
+    expect(engine.getSnapshot().symmetry).toBe('off')
+    engine.setSymmetry('both')
+    expect(engine.getSnapshot().symmetry).toBe('both')
+  })
+
   it('stores font family, weight and style', () => {
     const engine = new PaintEngine()
     engine.setFontFamily('serif')

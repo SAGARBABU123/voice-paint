@@ -3,6 +3,7 @@ import { usePaintEngine, usePaintSnapshot } from '../../hooks/PaintProvider'
 import { MAX_BRUSH_SIZE, MAX_FONT_SIZE, MIN_BRUSH_SIZE, MIN_FONT_SIZE } from '../../paint/constants'
 import { previewDashArray, strokeStyleLabel } from '../../paint/lineStyle'
 import { STROKE_STYLES, type StrokeStyle } from '../../paint/types'
+import type { Symmetry } from '../../paint/symmetry'
 import { TOOL_ICONS, TOOL_LABELS } from '../toolLabels'
 import { Icon } from '../ui/Icon'
 import { cn } from '../ui/cn'
@@ -35,6 +36,13 @@ const STROKE_TOOLS = new Set([
   'heart',
   'lightning',
 ])
+
+const SYMMETRY_OPTIONS: readonly { value: Symmetry; text: string; label: string }[] = [
+  { value: 'off', text: 'Off', label: 'No symmetry' },
+  { value: 'x', text: 'X', label: 'Mirror horizontally' },
+  { value: 'y', text: 'Y', label: 'Mirror vertically' },
+  { value: 'both', text: 'Both', label: 'Mirror both axes' },
+]
 
 function StrokePreview({ style }: { style: StrokeStyle }) {
   return (
@@ -346,6 +354,41 @@ export function OptionsBar() {
           >
             Pressure
           </button>
+        </div>
+      ) : null}
+      {showStroke ? (
+        <div
+          className="flex shrink-0 items-center gap-2 border-l border-surface-200 pl-3"
+          role="group"
+          aria-label="Symmetry"
+        >
+          <span className="text-11 font-semibold uppercase tracking-[0.08em] text-surface-400">
+            Symmetry
+          </span>
+          <div className="flex items-center gap-0.5">
+            {SYMMETRY_OPTIONS.map((option) => {
+              const active = state.symmetry === option.value
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={active}
+                  aria-label={option.label}
+                  title={option.label}
+                  onClick={() => engine.setSymmetry(option.value)}
+                  className={cn(
+                    'inline-flex h-7 items-center rounded-md px-2 text-12 font-medium transition-colors duration-150',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                    active
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-surface-500 hover:bg-surface-100 hover:text-surface-800',
+                  )}
+                >
+                  {option.text}
+                </button>
+              )
+            })}
+          </div>
         </div>
       ) : null}
     </div>
