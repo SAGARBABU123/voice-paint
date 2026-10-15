@@ -54,12 +54,33 @@ export function renderOperation(
     const color = operation.tool === 'eraser' ? BACKGROUND_COLOR : operation.color
     ctx.strokeStyle = color
     ctx.fillStyle = color
+    if (operation.opacity !== undefined) {
+      ctx.globalAlpha = Math.min(1, Math.max(0, alpha * operation.opacity))
+    }
+
+    const pressures = operation.pressures
+    const variableWidth =
+      pressures !== undefined &&
+      pressures.length === operation.points.length &&
+      operation.points.length > 1
 
     if (operation.points.length === 1) {
       const [point] = operation.points
       ctx.beginPath()
       ctx.arc(point.x, point.y, operation.size / 2, 0, Math.PI * 2)
       ctx.fill()
+    } else if (variableWidth) {
+      // Pen pressure varies the width per segment (light touch = thin line).
+      for (let index = 1; index < operation.points.length; index += 1) {
+        const from = operation.points[index - 1]
+        const to = operation.points[index]
+        const pressure = (pressures[index - 1] + pressures[index]) / 2
+        ctx.beginPath()
+        ctx.lineWidth = Math.max(0.5, operation.size * (0.25 + 0.75 * pressure))
+        ctx.moveTo(from.x, from.y)
+        ctx.lineTo(to.x, to.y)
+        ctx.stroke()
+      }
     } else if (operation.points.length > 1) {
       ctx.beginPath()
       ctx.moveTo(operation.points[0].x, operation.points[0].y)

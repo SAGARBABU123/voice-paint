@@ -59,6 +59,9 @@ export type PaintSnapshot = {
   fontSize: number
   fillTolerance: number
   shapeFill: boolean
+  brushOpacity: number
+  brushPressure: boolean
+  brushSmoothing: number
   strokeStyle: StrokeStyle
   sketchStyle: SketchStyle
   sketchWeight: SketchWeight
@@ -105,6 +108,9 @@ export class PaintEngine {
   private sketchDetail: SketchDetail = 'normal'
   private fillTolerance = 0
   private shapeFill = false
+  private brushOpacity = 1
+  private brushPressure = true
+  private brushSmoothing = 0
   private readonly history = new History<DocumentState>()
   private readonly listeners = new Set<() => void>()
   private canvas: HTMLCanvasElement | null = null
@@ -166,6 +172,29 @@ export class PaintEngine {
     const next = clampBrushSize(size)
     if (next === this.brushSize) return
     this.brushSize = next
+    this.emit()
+  }
+
+  /** Brush opacity 0.05..1 (applies to new strokes). */
+  setBrushOpacity(value: number): void {
+    const next = Math.max(0.05, Math.min(1, value))
+    if (next === this.brushOpacity) return
+    this.brushOpacity = next
+    this.emit()
+  }
+
+  /** Whether pen pressure varies the stroke width. */
+  setBrushPressure(enabled: boolean): void {
+    if (enabled === this.brushPressure) return
+    this.brushPressure = enabled
+    this.emit()
+  }
+
+  /** Freehand smoothing/stabilisation 0..0.9 (higher = steadier). */
+  setBrushSmoothing(value: number): void {
+    const next = Math.max(0, Math.min(0.9, value))
+    if (next === this.brushSmoothing) return
+    this.brushSmoothing = next
     this.emit()
   }
 
@@ -484,6 +513,9 @@ export class PaintEngine {
       fontSize: this.fontSize,
       fillTolerance: this.fillTolerance,
       shapeFill: this.shapeFill,
+      brushOpacity: this.brushOpacity,
+      brushPressure: this.brushPressure,
+      brushSmoothing: this.brushSmoothing,
       strokeStyle: this.strokeStyle,
       sketchStyle: this.sketchStyle,
       sketchWeight: this.sketchWeight,

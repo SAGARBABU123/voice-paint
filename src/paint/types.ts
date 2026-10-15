@@ -51,6 +51,10 @@ export type StrokeOperation = {
   points: Point[]
   /** Absent means solid (keeps older saved documents compatible). */
   style?: StrokeStyle
+  /** Brush opacity 0..1 (absent = 1). */
+  opacity?: number
+  /** Per-point pen pressure 0..1, parallel to `points` (absent = uniform). */
+  pressures?: number[]
 }
 
 export type ShapeOperation = {

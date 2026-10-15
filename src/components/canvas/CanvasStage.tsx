@@ -603,6 +603,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     drawingRef.current = true
     // Lock to straight lines / perfect shapes for the whole gesture.
     shiftLockRef.current = event.shiftKey
+    const penPressure = state.brushPressure && event.pointerType === 'pen'
     draftRef.current = isStrokeTool(activeTool)
       ? {
           id: createId(),
@@ -611,6 +612,8 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
           color,
           size: brushSize,
           style: strokeStyle,
+          opacity: state.brushOpacity,
+          ...(penPressure ? { pressures: [event.pressure] } : {}),
           points: [point],
         }
       : {
@@ -679,8 +682,18 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     const point = toDocumentPoint(event)
     if (draft.kind === 'stroke') {
       const previous = draft.points[draft.points.length - 1]
-      if (previous && distance(previous, point) < MIN_POINT_DISTANCE) return
-      draft.points.push(point)
+      // Optional stabilisation: ease toward the raw pointer sample.
+      const smoothing = state.brushSmoothing
+      const next =
+        smoothing > 0 && previous
+          ? {
+              x: previous.x + (point.x - previous.x) * (1 - smoothing),
+              y: previous.y + (point.y - previous.y) * (1 - smoothing),
+            }
+          : point
+      if (previous && distance(previous, next) < MIN_POINT_DISTANCE) return
+      draft.points.push(next)
+      if (draft.pressures) draft.pressures.push(event.pressure)
     } else if (draft.kind === 'shape') {
       if (shiftLockRef.current) {
         const dx = point.x - draft.start.x

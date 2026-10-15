@@ -74,6 +74,22 @@ describe('PaintEngine', () => {
     expect(engine.getSnapshot().brushSize).toBe(8)
   })
 
+  it('clamps brush opacity/smoothing and toggles pressure', () => {
+    const engine = new PaintEngine()
+    engine.setBrushOpacity(2)
+    expect(engine.getSnapshot().brushOpacity).toBe(1)
+    engine.setBrushOpacity(0)
+    expect(engine.getSnapshot().brushOpacity).toBe(0.05)
+
+    engine.setBrushSmoothing(5)
+    expect(engine.getSnapshot().brushSmoothing).toBe(0.9)
+    engine.setBrushSmoothing(-1)
+    expect(engine.getSnapshot().brushSmoothing).toBe(0)
+
+    engine.setBrushPressure(false)
+    expect(engine.getSnapshot().brushPressure).toBe(false)
+  })
+
   it('clamps the fill tolerance to 0–255', () => {
     const engine = new PaintEngine()
     expect(engine.getSnapshot().fillTolerance).toBe(0)

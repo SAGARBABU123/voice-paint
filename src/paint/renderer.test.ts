@@ -157,6 +157,46 @@ describe('renderOperation — strokes and shapes', () => {
   })
 })
 
+describe('renderOperation — brush engine', () => {
+  it('applies stroke opacity', () => {
+    const ctx = createFakeContext()
+    renderOperation(ctx, {
+      ...pencil([
+        { x: 0, y: 0 },
+        { x: 10, y: 10 },
+      ]),
+      opacity: 0.5,
+    })
+    expect(ctx.globalAlpha).toBeCloseTo(0.5)
+  })
+
+  it('draws one segment per point pair when pressure is present', () => {
+    const ctx = createFakeContext()
+    renderOperation(ctx, {
+      ...pencil([
+        { x: 0, y: 0 },
+        { x: 5, y: 5 },
+        { x: 10, y: 10 },
+      ]),
+      pressures: [0.2, 0.6, 1],
+    })
+    expect(ctx.calls.filter((call) => call.method === 'stroke')).toHaveLength(2)
+  })
+
+  it('draws a single path without pressure', () => {
+    const ctx = createFakeContext()
+    renderOperation(
+      ctx,
+      pencil([
+        { x: 0, y: 0 },
+        { x: 5, y: 5 },
+        { x: 10, y: 10 },
+      ]),
+    )
+    expect(ctx.calls.filter((call) => call.method === 'stroke')).toHaveLength(1)
+  })
+})
+
 describe('renderOperation — text', () => {
   it('draws text at its anchor without rotation', () => {
     const ctx = createFakeContext()

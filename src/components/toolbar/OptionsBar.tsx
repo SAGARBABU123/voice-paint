@@ -68,6 +68,7 @@ export function OptionsBar() {
   const sizeLabel = isTextTool ? 'Font size' : 'Brush size'
   const fillPercent = ((currentSize - minSize) / (maxSize - minSize)) * 100
   const showStroke = STROKE_TOOLS.has(state.activeTool)
+  const isFreehand = state.activeTool === 'pencil' || state.activeTool === 'eraser'
   const showFill =
     showStroke &&
     state.activeTool !== 'line' &&
@@ -217,6 +218,78 @@ export function OptionsBar() {
               )
             })}
           </div>
+        </div>
+      ) : null}
+
+      {showStroke ? (
+        <div className="flex shrink-0 items-center gap-2 border-l border-surface-200 pl-3">
+          <label
+            htmlFor="vop-options-opacity"
+            className="text-11 font-semibold uppercase tracking-[0.08em] text-surface-400"
+          >
+            Opacity
+          </label>
+          <input
+            id="vop-options-opacity"
+            type="range"
+            min={5}
+            max={100}
+            value={Math.round(state.brushOpacity * 100)}
+            title="Brush opacity"
+            className="vault-slider w-24 lg:w-28"
+            style={
+              { '--vault-slider-fill': `${Math.round(state.brushOpacity * 100)}%` } as CSSProperties
+            }
+            onChange={(event) => engine.setBrushOpacity(Number(event.target.value) / 100)}
+          />
+          <span
+            data-testid="brush-opacity-value"
+            className="w-9 shrink-0 text-right text-13 font-medium tabular-nums text-surface-700"
+          >
+            {Math.round(state.brushOpacity * 100)}%
+          </span>
+        </div>
+      ) : null}
+
+      {isFreehand ? (
+        <div className="flex shrink-0 items-center gap-2 border-l border-surface-200 pl-3">
+          <label
+            htmlFor="vop-options-smoothing"
+            className="text-11 font-semibold uppercase tracking-[0.08em] text-surface-400"
+          >
+            Smooth
+          </label>
+          <input
+            id="vop-options-smoothing"
+            type="range"
+            min={0}
+            max={90}
+            value={Math.round(state.brushSmoothing * 100)}
+            title="Stroke smoothing"
+            className="vault-slider w-20 lg:w-24"
+            style={
+              {
+                '--vault-slider-fill': `${Math.round(state.brushSmoothing * 100)}%`,
+              } as CSSProperties
+            }
+            onChange={(event) => engine.setBrushSmoothing(Number(event.target.value) / 100)}
+          />
+          <button
+            type="button"
+            aria-pressed={state.brushPressure}
+            aria-label="Pen pressure"
+            title="Vary stroke width with pen pressure"
+            onClick={() => engine.setBrushPressure(!state.brushPressure)}
+            className={cn(
+              'rounded-md px-2 py-1 text-12 font-medium transition-colors duration-150',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+              state.brushPressure
+                ? 'bg-brand-50 text-brand-700'
+                : 'text-surface-500 hover:bg-surface-100 hover:text-surface-800',
+            )}
+          >
+            Pressure
+          </button>
         </div>
       ) : null}
     </div>
