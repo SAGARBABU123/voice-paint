@@ -18,6 +18,7 @@ export function createFillOperation(
   documentHeight: number,
   seed: Point,
   color: string,
+  tolerance = 0,
 ): ImageOperation | null {
   if (typeof document === 'undefined') return null
 
@@ -35,7 +36,7 @@ export function createFillOperation(
   })
 
   const imageData = context.getImageData(0, 0, documentWidth, documentHeight)
-  const bounds = floodFill(imageData, seed.x, seed.y, hexToRgba(color))
+  const bounds = floodFill(imageData, seed.x, seed.y, hexToRgba(color), tolerance)
   if (!bounds) return null
 
   const patch = document.createElement('canvas')

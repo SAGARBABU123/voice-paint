@@ -30,10 +30,18 @@ export const TOOL_LABELS: Record<PaintTool, string> = {
   text: 'Text',
   fill: 'Fill',
   select: 'Select',
+  eyedropper: 'Eyedropper',
 }
 
 /** Freeform tools live in the header beside the title. */
-export const TOOLS_FREEFORM: PaintTool[] = ['pencil', 'eraser', 'text', 'fill', 'select']
+export const TOOLS_FREEFORM: PaintTool[] = [
+  'pencil',
+  'eraser',
+  'text',
+  'fill',
+  'select',
+  'eyedropper',
+]
 
 export const TOOL_ICONS: Record<PaintTool, IconName> = {
   pencil: 'pencil',
@@ -64,4 +72,5 @@ export const TOOL_ICONS: Record<PaintTool, IconName> = {
   text: 'text',
   fill: 'fill',
   select: 'select',
+  eyedropper: 'eyedropper',
 }

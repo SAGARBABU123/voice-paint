@@ -74,6 +74,20 @@ describe('PaintEngine', () => {
     expect(engine.getSnapshot().brushSize).toBe(8)
   })
 
+  it('clamps the fill tolerance to 0–255', () => {
+    const engine = new PaintEngine()
+    expect(engine.getSnapshot().fillTolerance).toBe(0)
+
+    engine.setFillTolerance(300)
+    expect(engine.getSnapshot().fillTolerance).toBe(255)
+
+    engine.setFillTolerance(-10)
+    expect(engine.getSnapshot().fillTolerance).toBe(0)
+
+    engine.setFillTolerance(48.6)
+    expect(engine.getSnapshot().fillTolerance).toBe(49)
+  })
+
   it('defaults to the pencil sketch style with normal weight and detail', () => {
     const engine = new PaintEngine()
     expect(engine.getSnapshot()).toMatchObject({

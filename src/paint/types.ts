@@ -1,6 +1,14 @@
 import { SHAPE_ORDER, isShapeTool, type ShapeTool as ImportedShapeTool } from './shapes'
 
-export const PAINT_TOOLS = ['pencil', 'eraser', ...SHAPE_ORDER, 'text', 'fill', 'select'] as const
+export const PAINT_TOOLS = [
+  'pencil',
+  'eraser',
+  ...SHAPE_ORDER,
+  'text',
+  'fill',
+  'select',
+  'eyedropper',
+] as const
 
 export type PaintTool = (typeof PAINT_TOOLS)[number]
 

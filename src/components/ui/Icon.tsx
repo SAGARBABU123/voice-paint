@@ -50,6 +50,7 @@ export type IconName =
   | 'info'
   | 'alert'
   | 'panel'
+  | 'eyedropper'
 
 const PATHS: Record<IconName, ReactNode> = {
   brush: (
@@ -251,6 +252,13 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <path d="M9 4v16" />
+    </>
+  ),
+  eyedropper: (
+    <>
+      <path d="m2 22 1-1h3l9-9" />
+      <path d="M3 21v-3l9-9" />
+      <path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.9.9a1.5 1.5 0 0 1 0 2.1l-1.6 1.6a1.5 1.5 0 0 1-2.1 0L9.6 8.9a1.5 1.5 0 0 1 0-2.1l1.6-1.6a1.5 1.5 0 0 1 2.1 0Z" />
     </>
   ),
 }

@@ -513,6 +513,18 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     }
   }
 
+  /** Reads the composited pixel colour at a document point (eyedropper). */
+  const sampleColorAt = (point: Point): string | null => {
+    const context = contextRef.current
+    if (!context) return null
+    const x = Math.floor(point.x)
+    const y = Math.floor(point.y)
+    if (x < 0 || y < 0 || x >= engine.width || y >= engine.height) return null
+    const [r, g, b] = context.getImageData(x, y, 1, 1).data
+    const hex = (value: number) => value.toString(16).padStart(2, '0')
+    return `#${hex(r)}${hex(g)}${hex(b)}`
+  }
+
   const releasePointer = (pointerId: number) => {
     const canvas = canvasRef.current
     if (
@@ -541,6 +553,13 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
       return
     }
     if (event.pointerType === 'mouse' && event.button !== 0) return
+
+    // Eyedropper: the tool, or Alt-click with any tool, samples the canvas.
+    if (state.activeTool === 'eyedropper' || event.altKey) {
+      const sampled = sampleColorAt(toDocumentPoint(event))
+      if (sampled) engine.setColor(sampled)
+      return
+    }
 
     if (cropMode) {
       capturePointer(event.pointerId)

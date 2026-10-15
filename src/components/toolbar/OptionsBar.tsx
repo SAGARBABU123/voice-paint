@@ -107,6 +107,36 @@ export function OptionsBar() {
         </span>
       </div>
 
+      {state.activeTool === 'fill' ? (
+        <div className="flex shrink-0 items-center gap-2 border-l border-surface-200 pl-3">
+          <label
+            htmlFor="vop-options-tolerance"
+            className="text-11 font-semibold uppercase tracking-[0.08em] text-surface-400"
+          >
+            Tolerance
+          </label>
+          <input
+            id="vop-options-tolerance"
+            type="range"
+            min={0}
+            max={128}
+            value={state.fillTolerance}
+            title="Fill tolerance — higher fills across similar colours"
+            className="vault-slider w-24 lg:w-32"
+            style={
+              { '--vault-slider-fill': `${(state.fillTolerance / 128) * 100}%` } as CSSProperties
+            }
+            onChange={(event) => engine.setFillTolerance(Number(event.target.value))}
+          />
+          <span
+            data-testid="fill-tolerance-value"
+            className="w-8 shrink-0 text-right text-13 font-medium tabular-nums text-surface-700"
+          >
+            {state.fillTolerance}
+          </span>
+        </div>
+      ) : null}
+
       {showStroke ? (
         <div
           className="flex shrink-0 items-center gap-2 border-l border-surface-200 pl-3"

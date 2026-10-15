@@ -57,6 +57,7 @@ export type PaintSnapshot = {
   color: string
   brushSize: number
   fontSize: number
+  fillTolerance: number
   strokeStyle: StrokeStyle
   sketchStyle: SketchStyle
   sketchWeight: SketchWeight
@@ -101,6 +102,7 @@ export class PaintEngine {
   private sketchStyle: SketchStyle = 'pencil'
   private sketchWeight: SketchWeight = 'normal'
   private sketchDetail: SketchDetail = 'normal'
+  private fillTolerance = 0
   private readonly history = new History<DocumentState>()
   private readonly listeners = new Set<() => void>()
   private canvas: HTMLCanvasElement | null = null
@@ -199,6 +201,14 @@ export class PaintEngine {
     this.emit()
   }
 
+  /** Flood-fill colour tolerance (0–255); higher fills across similar colours. */
+  setFillTolerance(value: number): void {
+    const next = Math.max(0, Math.min(255, Math.round(value)))
+    if (next === this.fillTolerance) return
+    this.fillTolerance = next
+    this.emit()
+  }
+
   /** Places text at a document point, using the active colour and font size. */
   addText(text: string, point: Point): boolean {
     const trimmed = text.trim()
@@ -224,6 +234,7 @@ export class PaintEngine {
       current.height,
       point,
       this.color,
+      this.fillTolerance,
     )
     if (!operation) return false
     this.commit(operation)
@@ -439,6 +450,7 @@ export class PaintEngine {
       color: this.color,
       brushSize: this.brushSize,
       fontSize: this.fontSize,
+      fillTolerance: this.fillTolerance,
       strokeStyle: this.strokeStyle,
       sketchStyle: this.sketchStyle,
       sketchWeight: this.sketchWeight,
