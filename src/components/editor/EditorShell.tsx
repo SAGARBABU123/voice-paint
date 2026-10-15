@@ -10,10 +10,19 @@ import { ToolbarRail } from '../toolbar/ToolbarRail'
 import { VoicePanel } from '../voice/VoicePanel'
 import { ShortcutsHelp } from './ShortcutsHelp'
 import { StatusBar } from './StatusBar'
+import { cn } from '../ui/cn'
+
+const DOCK_TABS = [
+  { id: 'voice', label: 'Voice' },
+  { id: 'history', label: 'History' },
+] as const
+
+type DockTab = (typeof DOCK_TABS)[number]['id']
 
 export function EditorShell() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [cropMode, setCropMode] = useState(false)
+  const [dockTab, setDockTab] = useState<DockTab>('voice')
   const toggleShortcuts = useCallback(() => setShortcutsOpen((open) => !open), [])
   const toggleCrop = useCallback(() => setCropMode((enabled) => !enabled), [])
   const exitCrop = useCallback(() => setCropMode(false), [])
@@ -48,11 +57,42 @@ export function EditorShell() {
         </div>
 
         <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-l border-surface-200 bg-surface-0">
-          <div aria-label="Voice transcript" className="min-h-0 flex-1 overflow-y-auto">
-            <VoicePanel />
+          <div
+            role="tablist"
+            aria-label="Panels"
+            className="flex shrink-0 items-center gap-0.5 border-b border-surface-200 px-2 py-1.5"
+          >
+            {DOCK_TABS.map((tab) => {
+              const active = dockTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={`dock-tab-${tab.id}`}
+                  aria-selected={active}
+                  aria-controls="dock-panel"
+                  onClick={() => setDockTab(tab.id)}
+                  className={cn(
+                    'rounded-md px-2.5 py-1 text-12 font-medium transition-colors duration-150',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                    active
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-surface-500 hover:bg-surface-100 hover:text-surface-800',
+                  )}
+                >
+                  {tab.label}
+                </button>
+              )
+            })}
           </div>
-          <div className="h-56 shrink-0 overflow-y-auto border-t border-surface-200">
-            <HistoryPanel />
+          <div
+            id="dock-panel"
+            role="tabpanel"
+            aria-labelledby={`dock-tab-${dockTab}`}
+            className="min-h-0 flex-1 overflow-y-auto"
+          >
+            {dockTab === 'voice' ? <VoicePanel /> : <HistoryPanel />}
           </div>
         </aside>
       </main>
