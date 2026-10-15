@@ -47,6 +47,13 @@ export function StatusBar({ persistence }: StatusBarProps = {}) {
       <div className="flex shrink-0 items-center gap-3">
         <span
           aria-hidden="true"
+          title="Document size"
+          className="hidden font-mono text-xs tabular-nums text-surface-400 sm:inline"
+        >
+          {state.documentWidth} × {state.documentHeight}
+        </span>
+        <span
+          aria-hidden="true"
           title="Pointer position on the canvas"
           className="hidden font-mono text-xs tabular-nums text-surface-400 sm:inline"
         >

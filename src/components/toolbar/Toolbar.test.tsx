@@ -7,6 +7,7 @@ import { PaintEngine } from '../../paint/engine'
 import type { StrokeOperation } from '../../paint/types'
 import { ToastProvider } from '../ui/Toast'
 import { Toolbar } from './Toolbar'
+import { OptionsBar } from './OptionsBar'
 import { ToolbarRail } from './ToolbarRail'
 
 function stroke(id = 's1'): StrokeOperation {
@@ -43,6 +44,7 @@ function renderHeader() {
     <PaintEngineProvider engine={engine}>
       <ToastProvider>
         <Toolbar />
+        <OptionsBar />
       </ToastProvider>
     </PaintEngineProvider>,
   )
@@ -83,7 +85,7 @@ describe('Toolbar rail', () => {
     expect(engine.getSnapshot().activeTool).toBe('pencil')
   })
 
-  it('updates brush size from the header slider', () => {
+  it('updates brush size from the options bar', () => {
     const engine = renderHeader()
     fireEvent.change(screen.getByLabelText('Brush size'), { target: { value: '20' } })
     expect(engine.getSnapshot().brushSize).toBe(20)

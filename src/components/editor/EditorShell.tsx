@@ -3,6 +3,7 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useProjectPersistence } from '../../hooks/useProjectPersistence'
 import { useRecordRecentColor } from '../../hooks/useRecentColors'
 import { CanvasStage } from '../canvas/CanvasStage'
+import { OptionsBar } from '../toolbar/OptionsBar'
 import { Toolbar } from '../toolbar/Toolbar'
 import { ToolbarRail } from '../toolbar/ToolbarRail'
 import { VoicePanel } from '../voice/VoicePanel'
@@ -35,6 +36,7 @@ export function EditorShell() {
      * canvas reads as the workspace rather than a widget on a page. */
     <div className="vop-app-bg relative flex h-screen w-full flex-col overflow-hidden bg-surface-100 text-surface-900">
       <Toolbar onToggleShortcuts={toggleShortcuts} shortcutsOpen={shortcutsOpen} />
+      <OptionsBar />
 
       {/* The canvas is the hero: it takes all remaining height. */}
       <main className="flex min-h-0 flex-1 overflow-hidden">
