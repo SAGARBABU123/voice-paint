@@ -33,6 +33,24 @@ export class History<T> {
     return this.index
   }
 
+  /** Every entry, including any redo branch beyond the cursor. */
+  get all(): readonly T[] {
+    return this.entries
+  }
+
+  /** The cursor position (number of applied entries). */
+  get cursor(): number {
+    return this.index
+  }
+
+  /** Moves the cursor without discarding the redo branch. */
+  jumpTo(index: number): boolean {
+    if (!Number.isInteger(index) || index < 0 || index > this.entries.length) return false
+    if (index === this.index) return false
+    this.index = index
+    return true
+  }
+
   /** Replaces the entire entry list, e.g. when loading a saved project. */
   replace(entries: readonly T[]): void {
     this.entries = entries.slice()

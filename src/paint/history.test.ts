@@ -30,6 +30,31 @@ describe('History', () => {
     expect(history.applied).toEqual(['a', 'b'])
   })
 
+  it('exposes the full list and jumps to a state while keeping redo', () => {
+    const history = new History<string>()
+    history.push('a')
+    history.push('b')
+    expect(history.all).toEqual(['a', 'b'])
+    expect(history.cursor).toBe(2)
+
+    expect(history.jumpTo(0)).toBe(true)
+    expect(history.applied).toEqual([])
+    expect(history.canRedo).toBe(true)
+    expect(history.all).toEqual(['a', 'b'])
+
+    expect(history.jumpTo(2)).toBe(true)
+    expect(history.applied).toEqual(['a', 'b'])
+  })
+
+  it('rejects out-of-range jumps', () => {
+    const history = new History<string>()
+    history.push('a')
+    expect(history.jumpTo(-1)).toBe(false)
+    expect(history.jumpTo(2)).toBe(false)
+    expect(history.jumpTo(1)).toBe(false)
+    expect(history.cursor).toBe(1)
+  })
+
   it('tracks the applied count as the cursor moves', () => {
     const history = new History<string>()
     history.push('a')

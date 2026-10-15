@@ -371,6 +371,21 @@ export class PaintEngine {
     return true
   }
 
+  /** Full history list (oldest first) for the History panel. */
+  getHistoryEntries(): readonly DocumentState[] {
+    return this.history.all
+  }
+
+  /** Cursor position within the history list. */
+  getHistoryIndex(): number {
+    return this.history.cursor
+  }
+
+  /** Jumps to a history state without discarding the redo branch. */
+  jumpToHistory(index: number): void {
+    if (this.history.jumpTo(index)) this.emit()
+  }
+
   clear(): void {
     const current = this.current
     if (current.operations.length === 0) return

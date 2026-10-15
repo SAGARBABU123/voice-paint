@@ -3,6 +3,7 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useProjectPersistence } from '../../hooks/useProjectPersistence'
 import { useRecordRecentColor } from '../../hooks/useRecentColors'
 import { CanvasStage } from '../canvas/CanvasStage'
+import { HistoryPanel } from './HistoryPanel'
 import { OptionsBar } from '../toolbar/OptionsBar'
 import { Toolbar } from '../toolbar/Toolbar'
 import { ToolbarRail } from '../toolbar/ToolbarRail'
@@ -46,11 +47,13 @@ export function EditorShell() {
           <CanvasStage cropMode={cropMode} onCropComplete={exitCrop} />
         </div>
 
-        <aside
-          aria-label="Voice transcript"
-          className="w-72 shrink-0 overflow-y-auto border-l border-surface-200 bg-surface-0"
-        >
-          <VoicePanel />
+        <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-l border-surface-200 bg-surface-0">
+          <div aria-label="Voice transcript" className="min-h-0 flex-1 overflow-y-auto">
+            <VoicePanel />
+          </div>
+          <div className="h-56 shrink-0 overflow-y-auto border-t border-surface-200">
+            <HistoryPanel />
+          </div>
         </aside>
       </main>
 
