@@ -20,6 +20,7 @@ import {
   strokeReveal,
 } from '../../paint/animate'
 import { clientToDocumentPoint } from '../../paint/coordinates'
+import { copyRegion, getClipboardImage, setClipboardImage } from '../../paint/clipboard'
 import { containsPoint, distance, normalizeRect, type Rect } from '../../paint/geometry'
 import { createId } from '../../paint/id'
 import { getCachedImage, preloadImages } from '../../paint/imageCache'
@@ -154,6 +155,7 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   const [draggingFile, setDraggingFile] = useState(false)
   // True while Space is held (pan affordance cursor).
   const [spaceHeld, setSpaceHeld] = useState(false)
+  const [hasClipboard, setHasClipboard] = useState(() => getClipboardImage() !== null)
   // Clear lives on the sheet's corner, so its confirmation dialog lives here too.
   const [confirmClear, setConfirmClear] = useState(false)
 
@@ -167,7 +169,9 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
   if (draftTool !== state.activeTool) {
     setDraftTool(state.activeTool)
     setTextDraft(null)
-    setSelection(null)
+    // Keep a selection made for the select tool (e.g. Ctrl+A); clear it when
+    // leaving the tool so stale marquees never linger.
+    if (state.activeTool !== 'select') setSelection(null)
   }
   const cropRect = crop.active ? crop.rect : null
 
@@ -803,6 +807,70 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [cropMode, state.activeTool, selection, engine, cancelCrop])
 
+  // --- Selection clipboard (copy / cut / paste / duplicate / select all) ----
+  const copySelection = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !selection) return false
+    const clip = copyRegion(canvas, selection)
+    if (!clip) return false
+    setClipboardImage(clip)
+    setHasClipboard(true)
+    return true
+  }, [selection])
+
+  const cutSelection = useCallback(() => {
+    if (!selection) return
+    if (copySelection()) {
+      engine.deleteSelection(selection)
+      setSelection(null)
+    }
+  }, [copySelection, engine, selection])
+
+  const pasteClipboard = useCallback(() => {
+    const clip = getClipboardImage()
+    if (!clip) return
+    const x = selection ? Math.round(selection.x) + 16 : Math.round((engine.width - clip.width) / 2)
+    const y = selection
+      ? Math.round(selection.y) + 16
+      : Math.round((engine.height - clip.height) / 2)
+    engine.pasteImage(clip.dataUrl, clip.width, clip.height, x, y)
+    setSelection({ x, y, width: clip.width, height: clip.height })
+  }, [engine, selection])
+
+  const duplicateSelection = useCallback(() => {
+    if (copySelection()) pasteClipboard()
+  }, [copySelection, pasteClipboard])
+
+  const selectAll = useCallback(() => {
+    engine.setTool('select')
+    setSelection({ x: 0, y: 0, width: engine.width, height: engine.height })
+  }, [engine])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return
+      if (!event.ctrlKey && !event.metaKey) return
+      const key = event.key.toLowerCase()
+      if (key === 'a') {
+        event.preventDefault()
+        selectAll()
+      } else if (key === 'c') {
+        if (copySelection()) event.preventDefault()
+      } else if (key === 'x') {
+        event.preventDefault()
+        cutSelection()
+      } else if (key === 'v') {
+        event.preventDefault()
+        pasteClipboard()
+      } else if (key === 'd') {
+        event.preventDefault()
+        duplicateSelection()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [copySelection, cutSelection, pasteClipboard, duplicateSelection, selectAll])
+
   const displayWidth = Math.max(1, Math.round(engine.width * viewScale))
   const displayHeight = Math.max(1, Math.round(engine.height * viewScale))
   const cropReady = cropRect !== null && cropRect.width >= 1 && cropRect.height >= 1
@@ -832,13 +900,31 @@ export function CanvasStage({ cropMode = false, onCropComplete }: CanvasStagePro
                 ? 'Drag inside the selection to move it'
                 : 'Drag on the canvas to select an area'}
             </span>
+            <Button variant="secondary" size="sm" onClick={selectAll}>
+              Select all
+            </Button>
+            <Button variant="secondary" size="sm" disabled={!hasClipboard} onClick={pasteClipboard}>
+              Paste
+            </Button>
             {selection ? (
               <>
+                <Button variant="secondary" size="sm" onClick={copySelection}>
+                  Copy
+                </Button>
+                <Button variant="secondary" size="sm" onClick={cutSelection}>
+                  Cut
+                </Button>
+                <Button variant="secondary" size="sm" onClick={duplicateSelection}>
+                  Duplicate
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   className="vault-btn-ghost-danger"
-                  onClick={() => engine.deleteSelection(selection)}
+                  onClick={() => {
+                    engine.deleteSelection(selection)
+                    setSelection(null)
+                  }}
                 >
                   Delete
                 </Button>

@@ -241,6 +241,13 @@ export class PaintEngine {
     return true
   }
 
+  /** Pastes a raster (e.g. a copied/cut selection) at a document position. */
+  pasteImage(dataUrl: string, width: number, height: number, x: number, y: number): boolean {
+    if (!dataUrl || width <= 0 || height <= 0) return false
+    this.commit({ id: createId(), kind: 'image', x, y, width, height, dataUrl })
+    return true
+  }
+
   /**
    * Draws one shape centred in the document using the active colour and width.
    * Used by voice commands, which have no pointer position to place a shape.
